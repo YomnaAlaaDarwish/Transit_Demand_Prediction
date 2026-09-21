@@ -1,0 +1,128 @@
+2026-09-21 14:52:00,185 run_reproduction INFO Loading Bogota BRT station series ...
+2026-09-21 14:52:05,177 dst_transitnet.data INFO Adjacency: kept 157 edges, dropped 2 (missing endpoints)
+2026-09-21 14:52:05,450 run_reproduction INFO Building windowed samples ...
+2026-09-21 14:52:51,621 run_reproduction INFO train windows: Xo=(74416, 20, 147) y=(74416, 147)
+2026-09-21 14:52:51,622 run_reproduction INFO normal windows: Xo=(11628, 20, 147) y=(11628, 147)
+2026-09-21 14:52:51,622 run_reproduction INFO protest windows: Xo=(2736, 20, 147) y=(2736, 147)
+2026-09-21 14:52:51,622 run_reproduction INFO covid windows: Xo=(18924, 20, 147) y=(18924, 147)
+2026-09-21 14:52:51,622 run_reproduction INFO === Training dst_transitnet ===
+2026-09-21 14:55:34,451 dst_transitnet.train INFO epoch 0 train_mse=0.007586 val_mse=0.001168 (161.9s)
+2026-09-21 14:58:13,638 dst_transitnet.train INFO epoch 1 train_mse=0.001764 val_mse=0.001077 (159.2s)
+2026-09-21 15:00:54,339 dst_transitnet.train INFO epoch 2 train_mse=0.001614 val_mse=0.001205 (160.7s)
+2026-09-21 15:03:30,943 dst_transitnet.train INFO epoch 3 train_mse=0.001518 val_mse=0.001031 (156.6s)
+2026-09-21 15:06:08,444 dst_transitnet.train INFO epoch 4 train_mse=0.001459 val_mse=0.001034 (157.5s)
+2026-09-21 15:08:49,503 dst_transitnet.train INFO epoch 5 train_mse=0.001399 val_mse=0.001031 (161.1s)
+2026-09-21 15:11:29,779 dst_transitnet.train INFO epoch 6 train_mse=0.001367 val_mse=0.001020 (160.3s)
+2026-09-21 15:14:10,515 dst_transitnet.train INFO epoch 7 train_mse=0.001328 val_mse=0.001072 (160.7s)
+2026-09-21 15:16:50,833 dst_transitnet.train INFO epoch 8 train_mse=0.001304 val_mse=0.001103 (160.3s)
+2026-09-21 15:19:28,432 dst_transitnet.train INFO epoch 9 train_mse=0.001280 val_mse=0.001130 (157.6s)
+2026-09-21 15:19:28,446 run_reproduction INFO dst_transitnet: 35649 params, 0.1 MB, trained in 26.61 min
+2026-09-21 15:22:34,738 run_reproduction INFO dst_transitnet / train: R2=0.9494 MAAPE=0.2892
+2026-09-21 15:22:53,764 run_reproduction INFO dst_transitnet / normal: R2=0.9470 MAAPE=0.2795
+2026-09-21 15:22:58,255 run_reproduction INFO dst_transitnet / protest: R2=0.9294 MAAPE=0.4320
+2026-09-21 15:23:29,916 run_reproduction INFO dst_transitnet / covid: R2=0.9248 MAAPE=0.4930
+2026-09-21 15:23:29,916 run_reproduction INFO Long-term iterative forecast for dst_transitnet ...
+2026-09-21 15:24:20,474 run_reproduction INFO dst_transitnet / normal long-term MAAPE ratio (lag12/lag1) = 1.4622
+2026-09-21 15:24:31,959 run_reproduction INFO dst_transitnet / protest long-term MAAPE ratio (lag12/lag1) = 1.4138
+2026-09-21 15:25:53,922 run_reproduction INFO dst_transitnet / covid long-term MAAPE ratio (lag12/lag1) = 1.6902
+2026-09-21 15:25:53,922 run_reproduction INFO === Training dst_transitnet_v2 ===
+2026-09-21 15:29:30,278 dst_transitnet.train INFO epoch 0 train_mse=0.004651 val_mse=0.001138 (216.4s)
+2026-09-21 15:32:52,667 dst_transitnet.train INFO epoch 1 train_mse=0.001722 val_mse=0.001125 (202.4s)
+2026-09-21 15:36:13,280 dst_transitnet.train INFO epoch 2 train_mse=0.001548 val_mse=0.001134 (200.6s)
+2026-09-21 15:39:38,586 dst_transitnet.train INFO epoch 3 train_mse=0.001467 val_mse=0.001073 (205.3s)
+2026-09-21 15:43:02,494 dst_transitnet.train INFO epoch 4 train_mse=0.001412 val_mse=0.001067 (203.9s)
+2026-09-21 15:46:15,236 dst_transitnet.train INFO epoch 5 train_mse=0.001359 val_mse=0.001068 (192.7s)
+2026-09-21 15:49:38,348 dst_transitnet.train INFO epoch 6 train_mse=0.001326 val_mse=0.001021 (203.1s)
+2026-09-21 15:53:03,214 dst_transitnet.train INFO epoch 7 train_mse=0.001312 val_mse=0.001043 (204.9s)
+2026-09-21 15:56:31,310 dst_transitnet.train INFO epoch 8 train_mse=0.001277 val_mse=0.001101 (208.1s)
+2026-09-21 15:59:59,232 dst_transitnet.train INFO epoch 9 train_mse=0.001260 val_mse=0.001053 (207.9s)
+2026-09-21 15:59:59,237 run_reproduction INFO dst_transitnet_v2: 31873 params, 0.1 MB, trained in 34.09 min
+2026-09-21 16:03:21,141 run_reproduction INFO dst_transitnet_v2 / train: R2=0.9495 MAAPE=0.2942
+2026-09-21 16:04:07,191 run_reproduction INFO dst_transitnet_v2 / normal: R2=0.9465 MAAPE=0.2845
+2026-09-21 16:04:17,602 run_reproduction INFO dst_transitnet_v2 / protest: R2=0.9279 MAAPE=0.4341
+2026-09-21 16:05:32,633 run_reproduction INFO dst_transitnet_v2 / covid: R2=0.9214 MAAPE=0.5119
+2026-09-21 16:05:32,634 run_reproduction INFO Long-term iterative forecast for dst_transitnet_v2 ...
+2026-09-21 16:06:57,942 run_reproduction INFO dst_transitnet_v2 / normal long-term MAAPE ratio (lag12/lag1) = 1.3817
+2026-09-21 16:07:15,144 run_reproduction INFO dst_transitnet_v2 / protest long-term MAAPE ratio (lag12/lag1) = 1.3732
+2026-09-21 16:09:32,775 run_reproduction INFO dst_transitnet_v2 / covid long-term MAAPE ratio (lag12/lag1) = 1.6096
+2026-09-21 16:09:32,776 run_reproduction INFO === Training ffnn ===
+2026-09-21 16:09:36,330 dst_transitnet.train INFO epoch 0 train_mse=0.006384 val_mse=0.001935 (3.6s)
+2026-09-21 16:09:39,982 dst_transitnet.train INFO epoch 1 train_mse=0.002597 val_mse=0.001712 (3.7s)
+2026-09-21 16:09:43,705 dst_transitnet.train INFO epoch 2 train_mse=0.002324 val_mse=0.001663 (3.7s)
+2026-09-21 16:09:47,337 dst_transitnet.train INFO epoch 3 train_mse=0.002198 val_mse=0.001648 (3.6s)
+2026-09-21 16:09:50,612 dst_transitnet.train INFO epoch 4 train_mse=0.002119 val_mse=0.001669 (3.3s)
+2026-09-21 16:09:54,168 dst_transitnet.train INFO epoch 5 train_mse=0.002061 val_mse=0.001578 (3.6s)
+2026-09-21 16:09:57,917 dst_transitnet.train INFO epoch 6 train_mse=0.002028 val_mse=0.001592 (3.7s)
+2026-09-21 16:10:01,809 dst_transitnet.train INFO epoch 7 train_mse=0.001997 val_mse=0.001593 (3.9s)
+2026-09-21 16:10:05,492 dst_transitnet.train INFO epoch 8 train_mse=0.001973 val_mse=0.001599 (3.7s)
+2026-09-21 16:10:09,073 dst_transitnet.train INFO epoch 9 train_mse=0.001958 val_mse=0.001579 (3.6s)
+2026-09-21 16:10:09,075 run_reproduction INFO ffnn: 5569 params, 0.0 MB, trained in 0.60 min
+2026-09-21 16:10:11,057 run_reproduction INFO ffnn / train: R2=0.9200 MAAPE=0.3076
+2026-09-21 16:10:11,322 run_reproduction INFO ffnn / normal: R2=0.9187 MAAPE=0.2959
+2026-09-21 16:10:11,376 run_reproduction INFO ffnn / protest: R2=0.9255 MAAPE=0.4248
+2026-09-21 16:10:11,883 run_reproduction INFO ffnn / covid: R2=0.8974 MAAPE=0.4458
+2026-09-21 16:10:11,883 run_reproduction INFO Long-term iterative forecast for ffnn ...
+2026-09-21 16:10:13,089 run_reproduction INFO ffnn / normal long-term MAAPE ratio (lag12/lag1) = 2.1855
+2026-09-21 16:10:13,373 run_reproduction INFO ffnn / protest long-term MAAPE ratio (lag12/lag1) = 1.7497
+2026-09-21 16:10:15,339 run_reproduction INFO ffnn / covid long-term MAAPE ratio (lag12/lag1) = 1.7200
+2026-09-21 16:10:15,340 run_reproduction INFO === Training lstm ===
+2026-09-21 16:10:56,525 dst_transitnet.train INFO epoch 0 train_mse=0.008585 val_mse=0.002164 (41.2s)
+2026-09-21 16:11:37,691 dst_transitnet.train INFO epoch 1 train_mse=0.002597 val_mse=0.001845 (41.2s)
+2026-09-21 16:12:19,609 dst_transitnet.train INFO epoch 2 train_mse=0.002365 val_mse=0.002318 (41.9s)
+2026-09-21 16:13:01,506 dst_transitnet.train INFO epoch 3 train_mse=0.002283 val_mse=0.001874 (41.9s)
+2026-09-21 16:13:42,477 dst_transitnet.train INFO epoch 4 train_mse=0.002248 val_mse=0.001868 (41.0s)
+2026-09-21 16:14:23,686 dst_transitnet.train INFO epoch 5 train_mse=0.002237 val_mse=0.001817 (41.2s)
+2026-09-21 16:15:10,291 dst_transitnet.train INFO epoch 6 train_mse=0.002220 val_mse=0.001896 (46.6s)
+2026-09-21 16:16:01,847 dst_transitnet.train INFO epoch 7 train_mse=0.002204 val_mse=0.001799 (51.6s)
+2026-09-21 16:16:42,483 dst_transitnet.train INFO epoch 8 train_mse=0.002185 val_mse=0.001819 (40.6s)
+2026-09-21 16:17:22,891 dst_transitnet.train INFO epoch 9 train_mse=0.002129 val_mse=0.001852 (40.4s)
+2026-09-21 16:17:22,895 run_reproduction INFO lstm: 4513 params, 0.0 MB, trained in 7.13 min
+2026-09-21 16:17:42,452 run_reproduction INFO lstm / train: R2=0.9085 MAAPE=0.3284
+2026-09-21 16:17:45,697 run_reproduction INFO lstm / normal: R2=0.9075 MAAPE=0.3168
+2026-09-21 16:17:46,482 run_reproduction INFO lstm / protest: R2=0.9207 MAAPE=0.4422
+2026-09-21 16:17:52,073 run_reproduction INFO lstm / covid: R2=0.8834 MAAPE=0.4670
+2026-09-21 16:17:52,073 run_reproduction INFO Long-term iterative forecast for lstm ...
+2026-09-21 16:17:58,639 run_reproduction INFO lstm / normal long-term MAAPE ratio (lag12/lag1) = 2.8773
+2026-09-21 16:18:00,190 run_reproduction INFO lstm / protest long-term MAAPE ratio (lag12/lag1) = 2.2188
+2026-09-21 16:18:10,636 run_reproduction INFO lstm / covid long-term MAAPE ratio (lag12/lag1) = 2.4660
+2026-09-21 16:18:10,637 run_reproduction INFO === Training dlinear ===
+2026-09-21 16:18:11,103 dst_transitnet.train INFO epoch 0 train_mse=0.012855 val_mse=0.004728 (0.5s)
+2026-09-21 16:18:11,576 dst_transitnet.train INFO epoch 1 train_mse=0.004379 val_mse=0.002719 (0.5s)
+2026-09-21 16:18:12,040 dst_transitnet.train INFO epoch 2 train_mse=0.003142 val_mse=0.002148 (0.5s)
+2026-09-21 16:18:12,528 dst_transitnet.train INFO epoch 3 train_mse=0.002690 val_mse=0.001926 (0.5s)
+2026-09-21 16:18:12,990 dst_transitnet.train INFO epoch 4 train_mse=0.002507 val_mse=0.001891 (0.5s)
+2026-09-21 16:18:13,484 dst_transitnet.train INFO epoch 5 train_mse=0.002440 val_mse=0.001890 (0.5s)
+2026-09-21 16:18:13,947 dst_transitnet.train INFO epoch 6 train_mse=0.002417 val_mse=0.001888 (0.5s)
+2026-09-21 16:18:14,409 dst_transitnet.train INFO epoch 7 train_mse=0.002412 val_mse=0.001897 (0.5s)
+2026-09-21 16:18:14,942 dst_transitnet.train INFO epoch 8 train_mse=0.002411 val_mse=0.001841 (0.5s)
+2026-09-21 16:18:15,434 dst_transitnet.train INFO epoch 9 train_mse=0.002413 val_mse=0.001888 (0.5s)
+2026-09-21 16:18:15,435 run_reproduction INFO dlinear: 42 params, 0.0 MB, trained in 0.08 min
+2026-09-21 16:18:16,721 run_reproduction INFO dlinear / train: R2=0.9062 MAAPE=0.3325
+2026-09-21 16:18:16,882 run_reproduction INFO dlinear / normal: R2=0.9056 MAAPE=0.3208
+2026-09-21 16:18:16,913 run_reproduction INFO dlinear / protest: R2=0.9203 MAAPE=0.4471
+2026-09-21 16:18:17,199 run_reproduction INFO dlinear / covid: R2=0.8826 MAAPE=0.5458
+2026-09-21 16:18:17,200 run_reproduction INFO Long-term iterative forecast for dlinear ...
+2026-09-21 16:18:17,922 run_reproduction INFO dlinear / normal long-term MAAPE ratio (lag12/lag1) = 2.5494
+2026-09-21 16:18:18,107 run_reproduction INFO dlinear / protest long-term MAAPE ratio (lag12/lag1) = 1.9978
+2026-09-21 16:18:19,325 run_reproduction INFO dlinear / covid long-term MAAPE ratio (lag12/lag1) = 2.3658
+2026-09-21 16:18:19,326 run_reproduction INFO === Training itransformer ===
+2026-09-21 16:18:44,105 dst_transitnet.train INFO epoch 0 train_mse=0.011267 val_mse=0.001759 (24.8s)
+2026-09-21 16:19:08,069 dst_transitnet.train INFO epoch 1 train_mse=0.002395 val_mse=0.001387 (24.0s)
+2026-09-21 16:19:32,878 dst_transitnet.train INFO epoch 2 train_mse=0.001831 val_mse=0.001385 (24.8s)
+2026-09-21 16:19:58,069 dst_transitnet.train INFO epoch 3 train_mse=0.001647 val_mse=0.001268 (25.2s)
+2026-09-21 16:20:22,802 dst_transitnet.train INFO epoch 4 train_mse=0.001564 val_mse=0.001210 (24.7s)
+2026-09-21 16:20:47,605 dst_transitnet.train INFO epoch 5 train_mse=0.001514 val_mse=0.001183 (24.8s)
+2026-09-21 16:21:13,312 dst_transitnet.train INFO epoch 6 train_mse=0.001489 val_mse=0.001164 (25.7s)
+2026-09-21 16:21:37,524 dst_transitnet.train INFO epoch 7 train_mse=0.001443 val_mse=0.001201 (24.2s)
+2026-09-21 16:22:02,018 dst_transitnet.train INFO epoch 8 train_mse=0.001417 val_mse=0.001122 (24.5s)
+2026-09-21 16:22:26,616 dst_transitnet.train INFO epoch 9 train_mse=0.001394 val_mse=0.001161 (24.6s)
+2026-09-21 16:22:26,619 run_reproduction INFO itransformer: 11265 params, 0.1 MB, trained in 4.12 min
+2026-09-21 16:22:40,890 run_reproduction INFO itransformer / train: R2=0.9445 MAAPE=0.2797
+2026-09-21 16:22:43,127 run_reproduction INFO itransformer / normal: R2=0.9421 MAAPE=0.2690
+2026-09-21 16:22:43,637 run_reproduction INFO itransformer / protest: R2=0.9326 MAAPE=0.4117
+2026-09-21 16:22:47,252 run_reproduction INFO itransformer / covid: R2=0.9247 MAAPE=0.4249
+2026-09-21 16:22:47,252 run_reproduction INFO Long-term iterative forecast for itransformer ...
+2026-09-21 16:22:54,525 run_reproduction INFO itransformer / normal long-term MAAPE ratio (lag12/lag1) = 1.3157
+2026-09-21 16:22:56,291 run_reproduction INFO itransformer / protest long-term MAAPE ratio (lag12/lag1) = 1.2693
+2026-09-21 16:23:08,101 run_reproduction INFO itransformer / covid long-term MAAPE ratio (lag12/lag1) = 1.4768
+2026-09-21 16:23:08,108 run_reproduction INFO Done. Results written to /home/user/Transit_Demand_Prediction/dst_transitnet/outputs

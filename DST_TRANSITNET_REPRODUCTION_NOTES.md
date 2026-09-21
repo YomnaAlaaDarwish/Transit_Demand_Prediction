@@ -196,33 +196,177 @@ DST-TransitNetV2 architecture described in the paper.
 
 ## 8. Results: paper vs. reproduction
 
-*(filled in after the training run in `dst_transitnet/logs/full_run.log` and
-`dst_transitnet/outputs/results_table.json` completes)*
+Full run: `dst_transitnet/logs/full_run.log`; raw numbers:
+`dst_transitnet/outputs/{results_table,timing}.json`,
+`dst_transitnet/outputs/<model>_long_term.json`. Training config actually
+used for this run: `train_stride=4`, `max_epochs=10`, `patience=3` (see §7).
 
 ### Table 1 — MAAPE / R² by period
 
+**Paper (Table 1):**
+
 | Model | Normal MAAPE | Normal R² | Protest MAAPE | Protest R² | COVID MAAPE | COVID R² |
 |---|---:|---:|---:|---:|---:|---:|
-| _to fill_ | | | | | | |
+| FFNN | 0.1213 | 0.8825 | 0.1732 | 0.6591 | 0.1787 | 0.6230 |
+| LSTM | 0.1124 | 0.9059 | 0.1693 | 0.7457 | 0.1729 | 0.7497 |
+| iTransformer | 0.1177 | 0.8782 | 0.1699 | 0.8662 | 0.1842 | 0.7935 |
+| DLinear | 0.1406 | 0.8579 | 0.1846 | 0.8594 | 0.1945 | 0.8162 |
+| **DST-TransitNet** | **0.0937** | **0.9444** | **0.1519** | **0.9130** | **0.1515** | **0.8759** |
+| **DST-TransitNetV2** | 0.0955 | 0.9362 | 0.1486 | 0.9037 | 0.1486 | 0.8777 |
+
+**This reproduction:**
+
+| Model | Normal MAAPE | Normal R² | Protest MAAPE | Protest R² | COVID MAAPE | COVID R² |
+|---|---:|---:|---:|---:|---:|---:|
+| FFNN | 0.2959 | 0.9187 | 0.4248 | 0.9255 | 0.4458 | 0.8974 |
+| LSTM | 0.3168 | 0.9075 | 0.4422 | 0.9207 | 0.4670 | 0.8834 |
+| iTransformer (simplified) | 0.2690 | 0.9421 | 0.4117 | 0.9326 | 0.4249 | 0.9247 |
+| DLinear | 0.3208 | 0.9056 | 0.4471 | 0.9203 | 0.5458 | 0.8826 |
+| **DST-TransitNet** | **0.2795** | **0.9470** | **0.4320** | **0.9294** | **0.4930** | **0.9248** |
+| **DST-TransitNetV2** | 0.2845 | 0.9465 | 0.4341 | 0.9279 | 0.5119 | 0.9214 |
+
+**Diff (reproduction − paper):**
+
+| Model | ΔNormal MAAPE | ΔNormal R² | ΔProtest MAAPE | ΔProtest R² | ΔCOVID MAAPE | ΔCOVID R² |
+|---|---:|---:|---:|---:|---:|---:|
+| FFNN | +0.1746 | +0.0362 | +0.2516 | +0.2664 | +0.2671 | +0.2744 |
+| LSTM | +0.2044 | +0.0016 | +0.2729 | +0.1750 | +0.2941 | +0.1337 |
+| iTransformer | +0.1513 | +0.0639 | +0.2418 | +0.0664 | +0.2407 | +0.1312 |
+| DLinear | +0.1802 | +0.0477 | +0.2625 | +0.0609 | +0.3513 | +0.0664 |
+| DST-TransitNet | +0.1858 | +0.0026 | +0.2801 | +0.0164 | +0.3415 | +0.0489 |
+| DST-TransitNetV2 | +0.1890 | +0.0103 | +0.2855 | +0.0242 | +0.3633 | +0.0437 |
+
+**Assessment:**
+
+- **R² is directionally close to the paper and, for most models, actually
+  *higher*** — the shapes/rankings largely agree (DST-TransitNet is at or
+  near the top on every period; all models keep the paper's ordering "Normal
+  best, COVID/Protest harder"). DST-TransitNet's R² gap vs. the paper is
+  small (+0.003 to +0.05).
+- **MAAPE is 2–3.5× higher than the paper across every single model**,
+  including DST-TransitNet. Since MAAPE is invariant to our min-max scaling
+  choice, this is not a scaling artifact. The most likely cause is MAAPE's
+  known sensitivity to samples where the true value `y` is small (the
+  `arctan((y-ŷ)/y)` term blows up in relative terms even for small absolute
+  errors); our reconstructed station/hour filtering may retain more
+  low-ridership station-timesteps (e.g. very early/late operating hours,
+  low-demand residential stations flagged as "challenge stations" in the
+  paper's own analysis, Sec. IV.C.2) than the paper's version, and the paper
+  does not state an epsilon/clipping convention for `y≈0`, which we had to
+  choose ourselves (`metrics.maape`, `eps=1e-8`). A secondary contributor is
+  the reduced training budget (§7): `train_stride=4` and only 10 epochs are
+  well short of the (unspecified) full training paper authors likely used.
+- **The relative ranking among baselines shifts**: our simplified
+  iTransformer is competitive with (and by COVID R², marginally *ahead of*)
+  DST-TransitNet, whereas the paper shows a clear gap with DST-TransitNet
+  variants on top. This is consistent with the documented baseline
+  adaptation (§5): sharing weights across all 147 stations turns FFNN/LSTM/
+  iTransformer into effectively multi-task learners with far more effective
+  training signal than the paper's 147-independent-model design, which
+  narrows the gap to DST-TransitNet's spatial-aggregation advantage.
 
 ### Table 2 — Long-term MAAPE ratio (lag 12 vs. lag 1)
 
+**Paper (Table 2):**
+
 | Model | Normal | Protest | COVID |
 |---|---:|---:|---:|
-| _to fill_ | | | |
+| **DST-TransitNet** | **1.265** | **1.423** | **1.365** |
+| DST-TransitNetV2 | 1.424 | 1.473 | 1.294 |
+| LSTM | 1.847 | 1.730 | 1.631 |
+| FFNN | 1.906 | 1.783 | 1.624 |
+| DLinear | 1.940 | 1.718 | 1.675 |
+| iTransformer | 2.214 | 1.858 | 1.918 |
+
+**This reproduction:**
+
+| Model | Normal | Protest | COVID |
+|---|---:|---:|---:|
+| DST-TransitNet | 1.462 | 1.414 | 1.690 |
+| DST-TransitNetV2 | 1.382 | 1.373 | 1.610 |
+| FFNN | 2.186 | 1.750 | 1.720 |
+| LSTM | 2.877 | 2.219 | 2.466 |
+| DLinear | 2.549 | 1.998 | 2.366 |
+| iTransformer (simplified) | **1.316** | **1.269** | **1.477** |
+
+**Assessment:** partial qualitative match. DST-TransitNet/V2 are clearly and
+consistently more stable over long-term iterative rollout than FFNN/LSTM/
+DLinear (ratios ~1.4–1.7 vs ~1.7–2.9), reproducing the paper's central
+long-term-stability claim relative to *those* baselines. However, our
+simplified iTransformer is *more* stable than DST-TransitNet/V2 here, the
+opposite of the paper's finding that DST-TransitNet variants are the most
+stable of all six models. We attribute this to the iTransformer baseline's
+much smaller, heavily-regularized 4-token structure (§5) being incidentally
+robust to iterative error accumulation, rather than to any property the
+paper's own (fully independent, per-station) iTransformer would have shared.
 
 ### Table 3 — Training time / model size
 
+**Paper (Table 3):** absolute training time is the *sum across 147
+independent per-station models* for FFNN/LSTM/iTransformer, vs. a *single*
+many-to-many model for DST-TransitNet(V2)/DLinear — not directly comparable
+to our shared-weight baselines (§5); shown for reference.
+
+| Model | Training time (min) | Size (MB) |
+|---|---:|---:|
+| LSTM | 723.8 | 5.75 |
+| FFNN | 355.6 | 1.83 |
+| iTransformer | 292.5 | 3805 |
+| DST-TransitNet | 44.7 | 0.8 |
+| DLinear | 36.0 | 0.3 |
+| DST-TransitNetV2 | 33.8 | 0.5 |
+
+**This reproduction:**
+
 | Model | Training time (min) | Params | Size (MB) |
 |---|---:|---:|---:|
-| _to fill_ | | | |
+| DST-TransitNet | 26.61 | 35,649 | 0.148 |
+| DST-TransitNetV2 | 34.09 | 31,873 | 0.132 |
+| iTransformer (simplified) | 4.12 | 11,265 | 0.051 |
+| LSTM | 7.13 | 4,513 | 0.020 |
+| FFNN | 0.60 | 5,569 | 0.024 |
+| DLinear | 0.08 | 42 | 0.003 |
+
+**Assessment:** FFNN/LSTM/iTransformer are 60–1000× faster here than in the
+paper purely because of the shared-weight adaptation (one model instead of
+147) — expected and not a meaningful comparison point. More interesting:
+**DST-TransitNet and DST-TransitNetV2's absolute training times land in the
+same order of magnitude as the paper's** (26.6/34.1 min here vs. 44.7/33.8
+min in the paper) despite `train_stride=4` and different hardware, which is
+a reasonable consistency check that our many-to-many training loop's
+per-epoch cost is architecturally comparable to the paper's. **One genuine
+architectural discrepancy**: the paper reports V2 as *faster* to train than
+V1 (33.8 < 44.7 min, i.e. moving the GRU to the prediction layer is a net
+speed-up); our reproduction shows the **opposite** (34.09 > 26.61 min). This
+traces to our specific interpretation of Fig. 6 (not available to us as an
+image — only the caption/prose describing it): our V2 applies k-GNN spatial
+aggregation at *every one of the 20 input timesteps, for all four series*
+(80 k-GNN calls/sample) before the single prediction-layer GRU, whereas V1
+applies k-GNN only *once per series* after each series' own GRU has already
+temporally compressed the sequence (4 k-GNN calls/sample). Our V2 is more
+parameter-efficient (31,873 vs 35,649 params, matching the paper's claim
+that V2 is more compact) but more compute-intensive per sample under this
+interpretation — a plausible, but not the only possible, reading of the
+paper's V2 description, and the most likely source of this particular
+mismatch.
 
 ## 9. Artifacts
 
+Committed to git (branch `claude/sharp-mayer-izj5xv`):
+
 - Code: `dst_transitnet/{config,data,layers,models,baselines,metrics,train,run_reproduction}.py`
-- Checkpoints: `dst_transitnet/checkpoints/<model>.pt`
-- Per-epoch training logs: `dst_transitnet/logs/<model>_train_log.json`
+- Checkpoints (all 6 models): `dst_transitnet/checkpoints/<model>.pt`
+- Per-epoch training logs (all 6 models): `dst_transitnet/logs/<model>_train_log.json`
 - Full run stdout/stderr: `dst_transitnet/logs/full_run.log`
-- Predictions (scaled units): `dst_transitnet/outputs/<model>_<period>_{pred,true}.npy`
-- Aggregate metrics: `dst_transitnet/outputs/results_table.json`,
-  `per_station_results.json`, `timing.json`, `<model>_long_term.json`
+- Aggregate metrics: `dst_transitnet/outputs/results_table.json` (Table 1
+  source), `per_station_results.json` (per-station R²/MAAPE, cf. paper Fig.
+  14), `timing.json` (Table 3 source), `<model>_long_term.json` (Table 2
+  source)
+- This document.
+
+Kept locally but **not** committed (see `.gitignore`; large and/or
+reproducible from the checkpoints):
+
+- Raw per-timestep predictions/ground truth (scaled units):
+  `dst_transitnet/outputs/<model>_<period>_{pred,true}.npy` — tens of MB per
+  model/period, largely duplicated across models for the same period.

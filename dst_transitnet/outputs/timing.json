@@ -1,0 +1,32 @@
+{
+  "dst_transitnet": {
+    "train_time_min": 26.613567332426708,
+    "n_params": 35649,
+    "size_mb": 0.1480417251586914
+  },
+  "dst_transitnet_v2": {
+    "train_time_min": 34.08851031462351,
+    "n_params": 31873,
+    "size_mb": 0.13245201110839844
+  },
+  "ffnn": {
+    "train_time_min": 0.6049615621566773,
+    "n_params": 5569,
+    "size_mb": 0.023850440979003906
+  },
+  "lstm": {
+    "train_time_min": 7.1258752544720965,
+    "n_params": 4513,
+    "size_mb": 0.019761085510253906
+  },
+  "dlinear": {
+    "train_time_min": 0.07995352745056153,
+    "n_params": 42,
+    "size_mb": 0.0025300979614257812
+  },
+  "itransformer": {
+    "train_time_min": 4.121480484803517,
+    "n_params": 11265,
+    "size_mb": 0.05064105987548828
+  }
+}
