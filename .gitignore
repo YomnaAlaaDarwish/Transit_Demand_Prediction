@@ -8,3 +8,8 @@
 .DS_Store
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
+
+# DST-TransitNet reproduction: active training log is committed once the
+# run completes (see DST_TRANSITNET_REPRODUCTION_NOTES.md); ignore while
+# it's still being appended to.
+dst_transitnet/logs/full_run.log
