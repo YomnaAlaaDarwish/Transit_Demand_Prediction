@@ -13,3 +13,11 @@
 # run completes (see DST_TRANSITNET_REPRODUCTION_NOTES.md); ignore while
 # it's still being appended to.
 dst_transitnet/logs/full_run.log
+
+# Raw per-timestep prediction/ground-truth dumps are large (tens of MB per
+# model/period, much of it duplicated across models) and not practical to
+# version-control; aggregate metrics (results_table.json,
+# per_station_results.json, timing.json, <model>_long_term.json) capture
+# everything needed for the paper-vs-reproduction comparison. Checkpoints
+# and training logs ARE kept in git (small, and directly useful).
+dst_transitnet/outputs/*.npy
