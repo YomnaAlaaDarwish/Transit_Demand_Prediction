@@ -1,0 +1,117 @@
+2026-09-23 10:30:20,974 tsb_run_reproduction INFO Loading Bogota BRT station series ...
+2026-09-23 10:30:26,557 tsb_run_reproduction INFO Training shared Time2Vec encoder ...
+2026-09-23 10:30:26,650 tsb_run_reproduction INFO Time2Vec training pairs: (1488680, 2)
+[time2vec] epoch 0 mse=0.001840
+[time2vec] epoch 1 mse=0.001662
+[time2vec] epoch 2 mse=0.001657
+[time2vec] epoch 3 mse=0.001653
+[time2vec] epoch 4 mse=0.001651
+2026-09-23 10:30:50,867 tsb_run_reproduction INFO Tuning ETR/XGBoost hyperparameters on system-wide aggregate series ...
+2026-09-23 10:31:59,748 tsb_run_reproduction INFO Tuned params: ETR={'max_depth': 15, 'n_estimators': 100} XGB={'learning_rate': 0.1, 'max_depth': 6, 'n_estimators': 100}
+2026-09-23 10:31:59,748 tsb_run_reproduction INFO Training 147 per-station stacked ensembles ...
+2026-09-23 10:39:00,825 tsb_run_reproduction INFO [10/147] (02202) Calle 127 done in 37.9s (train R2=0.984)
+2026-09-23 10:45:48,904 tsb_run_reproduction INFO [20/147] (03002) SUBA - TV- 91 done in 38.8s (train R2=0.985)
+2026-09-23 10:52:38,544 tsb_run_reproduction INFO [30/147] (03013) RIO NEGRO done in 37.3s (train R2=0.963)
+2026-09-23 10:59:30,741 tsb_run_reproduction INFO [40/147] (04104) Avenida 68 done in 37.6s (train R2=0.981)
+2026-09-23 11:06:26,665 tsb_run_reproduction INFO [50/147] (05101) Mandalay - Cr.73 done in 39.7s (train R2=0.963)
+2026-09-23 11:13:30,021 tsb_run_reproduction INFO [60/147] (06102) Salitre El Greco done in 39.3s (train R2=0.963)
+2026-09-23 11:20:24,885 tsb_run_reproduction INFO [70/147] (07001) PERDOMO done in 38.2s (train R2=0.990)
+2026-09-23 11:27:25,816 tsb_run_reproduction INFO [80/147] (07101) CASTELLANA done in 37.2s (train R2=0.981)
+2026-09-23 11:34:22,152 tsb_run_reproduction INFO [90/147] (07112) COMUNEROS done in 41.0s (train R2=0.963)
+2026-09-23 11:41:12,107 tsb_run_reproduction INFO [100/147] (08002) Biblioteca done in 39.2s (train R2=0.913)
+2026-09-23 11:48:14,670 tsb_run_reproduction INFO [110/147] (09105) Río Fucha done in 41.2s (train R2=0.931)
+2026-09-23 11:55:14,877 tsb_run_reproduction INFO [120/147] (09116) Avenida 39 done in 38.1s (train R2=0.981)
+2026-09-23 12:02:08,547 tsb_run_reproduction INFO [130/147] (10002) Av. Primero de Mayo done in 38.5s (train R2=0.988)
+2026-09-23 12:09:17,676 tsb_run_reproduction INFO [140/147] (12001) Carrera 43 done in 39.6s (train R2=0.937)
+2026-09-23 12:14:08,621 tsb_run_reproduction INFO [147/147] (14005) Las Aguas done in 40.3s (train R2=0.980)
+2026-09-23 12:14:08,636 tsb_run_reproduction INFO Done. Results written to /home/user/Transit_Demand_Prediction/tsb_forecast/outputs
+2026-09-23 12:14:08,637 tsb_run_reproduction INFO Summary: {
+  "train": {
+    "mae": {
+      "mean": 0.01564471258224852,
+      "median": 0.015073189544433188
+    },
+    "rmse": {
+      "mean": 0.02231742399529206,
+      "median": 0.02189641670470701
+    },
+    "smape": {
+      "mean": 24.782556521163745,
+      "median": 22.743471972172514
+    },
+    "r2": {
+      "mean": 0.9689186256895057,
+      "median": 0.9751605362284574
+    },
+    "maape": {
+      "mean": 0.2260801337191839,
+      "median": 0.20844250657668276
+    }
+  },
+  "normal": {
+    "mae": {
+      "mean": 0.018869035777865462,
+      "median": 0.018050916061464185
+    },
+    "rmse": {
+      "mean": 0.028583528252837397,
+      "median": 0.027074613777414012
+    },
+    "smape": {
+      "mean": 25.511474528839653,
+      "median": 24.172653542161825
+    },
+    "r2": {
+      "mean": 0.9462985963129446,
+      "median": 0.959520923945655
+    },
+    "maape": {
+      "mean": 0.23529461611371214,
+      "median": 0.226583187622646
+    }
+  },
+  "protest": {
+    "mae": {
+      "mean": 0.022720118658247197,
+      "median": 0.02070907026512479
+    },
+    "rmse": {
+      "mean": 0.03500944237444899,
+      "median": 0.031936728485020466
+    },
+    "smape": {
+      "mean": 45.76091269555674,
+      "median": 36.35530024271807
+    },
+    "r2": {
+      "mean": 0.8742337586504682,
+      "median": 0.9267694738129972
+    },
+    "maape": {
+      "mean": 0.3941962079441684,
+      "median": 0.32264346218464196
+    }
+  },
+  "covid": {
+    "mae": {
+      "mean": 0.014403327422443048,
+      "median": 0.013430140062755792
+    },
+    "rmse": {
+      "mean": 0.02093911355578098,
+      "median": 0.020094020943052213
+    },
+    "smape": {
+      "mean": 50.61244843554165,
+      "median": 48.170840353475675
+    },
+    "r2": {
+      "mean": 0.8753554726889546,
+      "median": 0.8954766464759929
+    },
+    "maape": {
+      "mean": 0.49051574198793196,
+      "median": 0.474038901701354
+    }
+  }
+}
