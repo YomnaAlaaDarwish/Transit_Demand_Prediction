@@ -16,3 +16,8 @@
 # everything needed for the paper-vs-reproduction comparison. Checkpoints
 # and training logs ARE kept in git (small, and directly useful).
 dst_transitnet/outputs/*.npy
+
+# TSB-Forecast-base reproduction: same pattern as dst_transitnet -- large
+# per-timestep artifacts and in-progress run outputs are not committed;
+# aggregate metrics/checkpoints from a completed run are added explicitly.
+tsb_forecast/outputs/*.npy
