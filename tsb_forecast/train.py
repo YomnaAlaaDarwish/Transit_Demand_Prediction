@@ -74,68 +74,74 @@ def long_term_forecast_station(series: pd.Series, calendar_df: pd.DataFrame, mod
     model's own previous predictions once the lag distance is inside the
     already-predicted horizon.
 
-    For efficiency (147 stations x thousands of target timestamps x 12
-    iterative lags), each starting point only copies the small numpy window
-    it actually needs (`lag_1week_steps` back to `max_lag` forward) instead
-    of the full per-station series.
+    Vectorized across ALL starting points in `target_index` at once, one
+    batched `model.predict()` call per lag step (12 calls total) rather than
+    one call per (starting point, lag) pair -- with hundreds of starting
+    points x 147 stations, per-row Python-level predict() calls made the
+    naive version intractable (see TSB_FORECAST_REPRODUCTION_NOTES.md
+    compute-budget section).
     """
     values = series.values.astype(np.float32)
     pos_map = pd.Series(np.arange(len(series)), index=series.index)
     max_lag = run_cfg.long_term_max_lag
-    preds = np.full((len(target_index), max_lag), np.nan, dtype=np.float32)
+    n = len(target_index)
+    preds = np.full((n, max_lag), np.nan, dtype=np.float32)
 
     back = fcfg.lag_1week_steps + 1
-    calendar_index = calendar_df.index
 
-    for row_i, t0 in enumerate(target_index):
-        if t0 not in pos_map.index:
-            continue
-        p0 = int(pos_map[t0])
-        if p0 - back < 0:
-            continue
+    p0 = np.array([pos_map.get(t, -1) for t in target_index], dtype=np.int64)
+    valid_start = (p0 - back >= 0) & (p0 + max_lag < len(values)) & (p0 >= 0)
+    if not valid_start.any():
+        return preds
+    idx_valid = np.where(valid_start)[0]
+    p0v = p0[idx_valid]
+    n_valid = len(p0v)
 
-        # window[k] holds the (real, then increasingly predicted) value at
-        # absolute position (p0 - back + 1 + k), i.e. window[back-1] = the
-        # true value AT p0 (matches the short-term convention: a feature row
-        # timestamped t0 predicts the value at t0+1, so lag=0's target is
-        # p0+1 and its "current value"/lag_0 feature is the true value at p0).
-        window = np.concatenate([values[p0 - back + 1: p0 + 1], np.full(max_lag, np.nan, dtype=np.float32)])
+    # window[i, k] = value at absolute position (p0v[i] - back + 1 + k);
+    # window[:, back-1] = true value AT p0 (see short-term y=shift(-1) convention).
+    window = np.full((n_valid, back + max_lag), np.nan, dtype=np.float32)
+    for i in range(n_valid):
+        window[i, :back] = values[p0v[i] - back + 1: p0v[i] + 1]
 
-        for lag in range(max_lag):
-            target_pos_abs = p0 + lag + 1
-            target_local = back + lag  # index into `window` for target_pos_abs
+    alive = np.ones(n_valid, dtype=bool)  # rows that haven't hit a NaN/invalid feature yet
 
-            def rel(offset_back):
-                idx = target_local - offset_back
-                return window[idx] if 0 <= idx < len(window) else np.nan
+    for lag in range(max_lag):
+        target_local = back + lag
+        target_pos_abs = p0v + lag + 1
+        target_ts = series.index[target_pos_abs]  # bounds already checked via valid_start
 
-            row = {"lag_0": rel(1)}
-            for L in fcfg.lag_steps:
-                row[f"lag_{L}"] = rel(L)
-            row["lag_1day"] = rel(fcfg.lag_1day_steps)
-            row["lag_1week"] = rel(fcfg.lag_1week_steps)
+        row_feats = {"lag_0": window[:, target_local - 1]}
+        for L in fcfg.lag_steps:
+            row_feats[f"lag_{L}"] = window[:, target_local - L]
+        row_feats["lag_1day"] = window[:, target_local - fcfg.lag_1day_steps]
+        row_feats["lag_1week"] = window[:, target_local - fcfg.lag_1week_steps]
 
-            if target_pos_abs < len(series.index):
-                target_ts = series.index[target_pos_abs]
-            else:
-                target_ts = series.index[-1] + pd.Timedelta(minutes=15) * (target_pos_abs - len(series.index) + 1)
-            cal_row = calendar_df.loc[target_ts] if target_ts in calendar_index else calendar_df.iloc[-1]
-            for c in cal_row.index:
-                row[c] = cal_row[c]
+        cal_rows = calendar_df.reindex(target_ts)
+        for c in cal_rows.columns:
+            row_feats[c] = cal_rows[c].values
 
-            cur_val = row["lag_0"]
-            week_val = row["lag_1week"]
-            if np.isnan(cur_val) or np.isnan(week_val):
-                break
-            emb = embed_features(embedder, np.array([[cur_val, week_val]], dtype=np.float32), device=device)[0]
-            for i, v in enumerate(emb):
-                row[f"embed_{i}"] = v
+        cur_val = row_feats["lag_0"]
+        week_val = row_feats["lag_1week"]
+        row_valid = alive & ~np.isnan(cur_val) & ~np.isnan(week_val)
+        if not row_valid.any():
+            break
 
-            x_vec = np.array([[row[c] for c in feature_cols]], dtype=np.float32)
-            if np.isnan(x_vec).any():
-                break
-            pred = model.predict(x_vec)[0]
-            preds[row_i, lag] = pred
-            window[target_local] = pred
+        emb = np.zeros((n_valid, embedder.encoder[-1].out_features), dtype=np.float32)
+        safe_cur = np.nan_to_num(cur_val)
+        safe_week = np.nan_to_num(week_val)
+        emb[row_valid] = embed_features(embedder, np.stack([safe_cur, safe_week], axis=1)[row_valid], device=device)
+        for i in range(emb.shape[1]):
+            row_feats[f"embed_{i}"] = emb[:, i]
+
+        X = np.stack([row_feats[c] for c in feature_cols], axis=1).astype(np.float32)
+        row_valid &= ~np.isnan(X).any(axis=1)
+        if not row_valid.any():
+            alive &= row_valid
+            break
+
+        pred = model.predict(X[row_valid])
+        preds[idx_valid[row_valid], lag] = pred
+        window[np.where(row_valid)[0], target_local] = pred
+        alive &= row_valid
 
     return preds

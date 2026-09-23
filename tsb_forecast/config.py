@@ -72,17 +72,20 @@ class ModelConfig:
     # [PAPER-SPECIFIED intent, ASSUMPTION on exact values -- the paper says
     # "grid search hyperparameter tuning" without listing the grid] Small,
     # CPU-tractable grids since this reproduction trains 147 independent
-    # per-station stacks.
-    etr_n_estimators: List[int] = field(default_factory=lambda: [100, 200])
-    etr_max_depth: List[int] = field(default_factory=lambda: [None, 10])
+    # per-station stacks: unbounded-depth ExtraTrees on 60-70k rows proved
+    # far too slow (see TSB_FORECAST_REPRODUCTION_NOTES.md compute-budget
+    # section), so depth is capped and estimator counts kept modest.
+    etr_n_estimators: List[int] = field(default_factory=lambda: [50, 100])
+    etr_max_depth: List[int] = field(default_factory=lambda: [8, 15])
 
-    xgb_n_estimators: List[int] = field(default_factory=lambda: [100, 200])
+    xgb_n_estimators: List[int] = field(default_factory=lambda: [50, 100])
     xgb_max_depth: List[int] = field(default_factory=lambda: [3, 6])
     xgb_learning_rate: List[float] = field(default_factory=lambda: [0.1])
 
-    # [PAPER-SPECIFIED] "5-fold time series split cross-validation" for the
-    # stacking meta-learner.
-    n_splits: int = 5
+    # [PAPER-SPECIFIED intent: "5-fold time series split cross-validation";
+    # reduced to 3 here -- a compute-budget adaptation, since each split adds
+    # two more full tree-ensemble fits per station across 147 stations.]
+    n_splits: int = 3
     random_state: int = 42
 
 
