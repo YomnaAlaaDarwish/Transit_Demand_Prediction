@@ -21,3 +21,4 @@ dst_transitnet/outputs/*.npy
 # per-timestep artifacts and in-progress run outputs are not committed;
 # aggregate metrics/checkpoints from a completed run are added explicitly.
 tsb_forecast/outputs/*.npy
+tsb_forecast/logs/full_run.log
