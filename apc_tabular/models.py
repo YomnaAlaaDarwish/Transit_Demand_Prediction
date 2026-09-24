@@ -3,6 +3,8 @@ Forest, XGBoost, LightGBM. Each wrapper exposes a common `.fit(df, y)` /
 `.predict(df)` interface operating directly on the long-format dataframe
 from features.py (categorical columns kept as pandas `category` dtype).
 """
+import resource
+
 import numpy as np
 import pandas as pd
 import torch
@@ -170,8 +172,8 @@ class TabularDNNWrapper:
 
         if X_val is not None:
             cat_val, cont_val = self._prep(X_val, fit=False)
-            cont_val_t = torch.from_numpy(cont_val).to(self.device)
-            cat_val_t = {c: torch.from_numpy(v).to(self.device) for c, v in cat_val.items()}
+            cont_val_t = torch.from_numpy(cont_val)
+            cat_val_t = {c: torch.from_numpy(v) for c, v in cat_val.items()}
             y_val_norm = ((y_val - y_mean) / y_std).astype(np.float32)
 
         best_val, patience_left, best_state = float("inf"), self.mcfg.dnn_patience, None
@@ -181,6 +183,7 @@ class TabularDNNWrapper:
             self.model.train()
             idx = rng.permutation(n)
             epoch_loss = 0.0
+            n_batches = 0
             for i in range(0, n, bs):
                 b = idx[i:i + bs]
                 opt.zero_grad()
@@ -190,12 +193,14 @@ class TabularDNNWrapper:
                 loss.backward()
                 opt.step()
                 epoch_loss += loss.item() * len(b)
+                n_batches += 1
+                if n_batches % 50 == 0:
+                    rss_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+                    print(f"[tabular_dnn]   epoch {epoch} batch {n_batches} rss={rss_mb:.0f}MB", flush=True)
             epoch_loss /= n
 
             if X_val is not None:
-                self.model.eval()
-                with torch.no_grad():
-                    val_pred = self.model(cat_val_t, cont_val_t).cpu().numpy()
+                val_pred = self._batched_forward(cat_val_t, cont_val_t)
                 val_mse = float(np.mean((val_pred - y_val_norm) ** 2))
                 print(f"[tabular_dnn] epoch {epoch} train_mse={epoch_loss:.4f} val_mse={val_mse:.4f}")
                 if val_mse < best_val - 1e-5:
@@ -213,13 +218,32 @@ class TabularDNNWrapper:
             self.model.load_state_dict(best_state)
         return self
 
+    def _batched_forward(self, cat_t: dict, cont_t: torch.Tensor) -> np.ndarray:
+        """Runs inference in `dnn_batch_size` chunks -- a single monolithic
+        forward pass over a large (>1M row) frame would materialise
+        activations for the widest hidden layer (2048 units, per the paper's
+        Table 12) across every row at once (e.g. 1.2M x 2048 floats ~= 10GB
+        for just one layer), which is what actually caused the OOM kill this
+        reproduction hit when validating/predicting on the full pooled
+        dataset -- NOT a leak across epochs/batches (memory was confirmed
+        flat during training; see TRONDHEIM_APC_REPRODUCTION_NOTES.md).
+        """
+        self.model.eval()
+        n = len(cont_t)
+        bs = self.mcfg.dnn_batch_size
+        outputs = []
+        with torch.no_grad():
+            for i in range(0, n, bs):
+                cat_b = {c: v[i:i + bs].to(self.device) for c, v in cat_t.items()}
+                cont_b = cont_t[i:i + bs].to(self.device)
+                outputs.append(self.model(cat_b, cont_b).cpu().numpy())
+        return np.concatenate(outputs)
+
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         cat_arrays, cont = self._prep(X, fit=False)
-        self.model.eval()
-        with torch.no_grad():
-            cat_t = {c: torch.from_numpy(v).to(self.device) for c, v in cat_arrays.items()}
-            cont_t = torch.from_numpy(cont).to(self.device)
-            pred = self.model(cat_t, cont_t).cpu().numpy()
+        cat_t = {c: torch.from_numpy(v) for c, v in cat_arrays.items()}
+        cont_t = torch.from_numpy(cont)
+        pred = self._batched_forward(cat_t, cont_t)
         return pred * self.y_std + self.y_mean
 
 
