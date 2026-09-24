@@ -21,3 +21,8 @@ dst_transitnet/outputs/*.npy
 # per-timestep artifacts and in-progress run outputs are not committed;
 # aggregate metrics/checkpoints from a completed run are added explicitly.
 tsb_forecast/outputs/*.npy
+
+# APC tabular reproduction (Yusuf et al. 2025 stop-level framework, adapted)
+apc_tabular/outputs/*.npy
+apc_tabular/logs/full_run.log
+catboost_info/
