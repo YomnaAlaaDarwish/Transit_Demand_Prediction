@@ -25,4 +25,5 @@ tsb_forecast/outputs/*.npy
 # APC tabular reproduction (Yusuf et al. 2025 stop-level framework, adapted)
 apc_tabular/outputs/*.npy
 apc_tabular/logs/full_run.log
+apc_tabular/logs/dnn_only.log
 catboost_info/
