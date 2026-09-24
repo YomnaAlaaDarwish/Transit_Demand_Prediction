@@ -1,0 +1,25 @@
+2026-09-24 08:38:05,908 apc_run_reproduction INFO Loading Bogota BRT station series (raw counts, unscaled) ...
+2026-09-24 08:38:13,000 apc_run_reproduction INFO Building pooled tabular frames ...
+2026-09-24 08:38:20,383 apc_run_reproduction INFO train=(2755074, 14) val=(1224363, 14) normal=(1709316, 14) protest=(402192, 14) covid=(2781828, 14) (built in 7.4s)
+2026-09-24 08:38:20,387 apc_run_reproduction INFO === Training random_forest ===
+2026-09-24 08:40:41,692 apc_run_reproduction INFO random_forest trained in 141.3s
+2026-09-24 08:40:52,610 apc_run_reproduction INFO random_forest / normal: R2=0.8838 RMSE=117.1717 MAAPE=0.4377
+2026-09-24 08:40:53,503 apc_run_reproduction INFO random_forest / protest: R2=0.7418 RMSE=171.7693 MAAPE=0.5950
+2026-09-24 08:41:01,222 apc_run_reproduction INFO random_forest / covid: R2=-2.3339 RMSE=276.4765 MAAPE=1.0953
+2026-09-24 08:41:01,222 apc_run_reproduction INFO === Training xgboost ===
+2026-09-24 08:41:34,034 apc_run_reproduction INFO xgboost trained in 32.8s
+2026-09-24 08:41:47,473 apc_run_reproduction INFO xgboost / normal: R2=0.8901 RMSE=113.9245 MAAPE=0.4273
+2026-09-24 08:41:48,732 apc_run_reproduction INFO xgboost / protest: R2=0.7650 RMSE=163.8600 MAAPE=0.5868
+2026-09-24 08:41:56,458 apc_run_reproduction INFO xgboost / covid: R2=-1.9443 RMSE=259.8179 MAAPE=1.1019
+2026-09-24 08:41:56,458 apc_run_reproduction INFO === Training catboost ===
+2026-09-24 08:46:45,061 apc_run_reproduction INFO catboost trained in 288.6s
+2026-09-24 08:47:05,485 apc_run_reproduction INFO catboost / normal: R2=0.8632 RMSE=127.1186 MAAPE=0.4283
+2026-09-24 08:47:07,087 apc_run_reproduction INFO catboost / protest: R2=0.7257 RMSE=177.0433 MAAPE=0.5869
+2026-09-24 08:47:20,709 apc_run_reproduction INFO catboost / covid: R2=-2.0531 RMSE=264.5780 MAAPE=1.0781
+2026-09-24 08:47:20,709 apc_run_reproduction INFO === Training lightgbm ===
+[LightGBM] [Warning] Met categorical feature which contains sparse values. Consider renumbering to consecutive integers started from zero
+2026-09-24 08:47:32,687 apc_run_reproduction INFO lightgbm trained in 12.0s
+2026-09-24 08:47:47,621 apc_run_reproduction INFO lightgbm / normal: R2=0.8897 RMSE=114.1578 MAAPE=0.3877
+2026-09-24 08:47:48,726 apc_run_reproduction INFO lightgbm / protest: R2=0.7423 RMSE=171.5937 MAAPE=0.5575
+2026-09-24 08:47:56,986 apc_run_reproduction INFO lightgbm / covid: R2=-2.4858 RMSE=282.7035 MAAPE=1.0762
+2026-09-24 08:47:56,986 apc_run_reproduction INFO === Training tabular_dnn ===

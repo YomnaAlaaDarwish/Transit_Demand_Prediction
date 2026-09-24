@@ -1,0 +1,51 @@
+2026-09-24 09:04:01,242 apc_run_reproduction INFO Loading Bogota BRT station series (raw counts, unscaled) ...
+2026-09-24 09:04:07,638 apc_run_reproduction INFO Building pooled tabular frames ...
+2026-09-24 09:04:13,876 apc_run_reproduction INFO train=(2755074, 14) val=(1224363, 14) normal=(1709316, 14) protest=(402192, 14) covid=(2781828, 14) (built in 6.2s)
+2026-09-24 09:04:13,880 apc_run_reproduction INFO === Training tabular_dnn ===
+[tabular_dnn]   epoch 0 batch 50 rss=2588MB
+[tabular_dnn]   epoch 0 batch 100 rss=2588MB
+[tabular_dnn]   epoch 0 batch 150 rss=2588MB
+[tabular_dnn]   epoch 0 batch 200 rss=2588MB
+[tabular_dnn]   epoch 0 batch 250 rss=2588MB
+[tabular_dnn]   epoch 0 batch 300 rss=2588MB
+[tabular_dnn] epoch 0 train_mse=0.3402 val_mse=0.2014
+[tabular_dnn]   epoch 1 batch 50 rss=2588MB
+[tabular_dnn]   epoch 1 batch 100 rss=2588MB
+[tabular_dnn]   epoch 1 batch 150 rss=2588MB
+[tabular_dnn]   epoch 1 batch 200 rss=2588MB
+[tabular_dnn]   epoch 1 batch 250 rss=2588MB
+[tabular_dnn]   epoch 1 batch 300 rss=2588MB
+[tabular_dnn] epoch 1 train_mse=0.1619 val_mse=0.2129
+[tabular_dnn]   epoch 2 batch 50 rss=2589MB
+[tabular_dnn]   epoch 2 batch 100 rss=2589MB
+[tabular_dnn]   epoch 2 batch 150 rss=2589MB
+[tabular_dnn]   epoch 2 batch 200 rss=2589MB
+[tabular_dnn]   epoch 2 batch 250 rss=2589MB
+[tabular_dnn]   epoch 2 batch 300 rss=2589MB
+[tabular_dnn] epoch 2 train_mse=0.1542 val_mse=0.1892
+[tabular_dnn]   epoch 3 batch 50 rss=2589MB
+[tabular_dnn]   epoch 3 batch 100 rss=2589MB
+[tabular_dnn]   epoch 3 batch 150 rss=2589MB
+[tabular_dnn]   epoch 3 batch 200 rss=2589MB
+[tabular_dnn]   epoch 3 batch 250 rss=2597MB
+[tabular_dnn]   epoch 3 batch 300 rss=2597MB
+[tabular_dnn] epoch 3 train_mse=0.1517 val_mse=0.1979
+[tabular_dnn]   epoch 4 batch 50 rss=2597MB
+[tabular_dnn]   epoch 4 batch 100 rss=2597MB
+[tabular_dnn]   epoch 4 batch 150 rss=2597MB
+[tabular_dnn]   epoch 4 batch 200 rss=2597MB
+[tabular_dnn]   epoch 4 batch 250 rss=2597MB
+[tabular_dnn]   epoch 4 batch 300 rss=2597MB
+[tabular_dnn] epoch 4 train_mse=0.1488 val_mse=0.1935
+[tabular_dnn]   epoch 5 batch 50 rss=2597MB
+[tabular_dnn]   epoch 5 batch 100 rss=2597MB
+[tabular_dnn]   epoch 5 batch 150 rss=2597MB
+[tabular_dnn]   epoch 5 batch 200 rss=2597MB
+[tabular_dnn]   epoch 5 batch 250 rss=2597MB
+[tabular_dnn]   epoch 5 batch 300 rss=2597MB
+[tabular_dnn] epoch 5 train_mse=0.1483 val_mse=0.1923
+2026-09-24 09:29:12,566 apc_run_reproduction INFO tabular_dnn trained in 1498.7s
+2026-09-24 09:30:09,693 apc_run_reproduction INFO tabular_dnn / normal: R2=0.7935 RMSE=156.1933 MAAPE=0.8291
+2026-09-24 09:30:13,194 apc_run_reproduction INFO tabular_dnn / protest: R2=0.5856 RMSE=217.5937 MAAPE=0.9224
+2026-09-24 09:30:56,707 apc_run_reproduction INFO tabular_dnn / covid: R2=-2.0643 RMSE=265.0603 MAAPE=1.2933
+2026-09-24 09:30:56,976 apc_run_reproduction INFO Done. Results written to /home/user/Transit_Demand_Prediction/apc_tabular/outputs
