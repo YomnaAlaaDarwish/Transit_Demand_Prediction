@@ -4,6 +4,7 @@ four ensemble strategies on the Normal/Protest/COVID periods (same as the
 DST-TransitNet / TSB-Forecast reproductions), and saves all metrics.
 """
 import argparse
+import gc
 import json
 import logging
 import os
@@ -104,6 +105,8 @@ def main():
                         name, period_name, model_results[period_name]["r2"],
                         model_results[period_name]["rmse"], model_results[period_name]["maape"])
         results[name] = model_results
+        del model, train_pred
+        gc.collect()
 
     with open(os.path.join(OUT_DIR, "results_table.json"), "w") as f:
         json.dump(results, f, indent=2)
