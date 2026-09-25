@@ -28,3 +28,10 @@ Hashes are the first 16 hex characters of SHA-256, computed on 2026-09-25 on bra
 
 Benchmark result files under `output/day/**` (147 JSON files per model) are used only
 to confirm which stations the benchmark modelled. They are not a data source.
+
+## Pending: `data/raw/weather/`
+
+`scripts/06_download_weather.py` saves the Open-Meteo responses exactly as downloaded
+(`probe_<model>_<k>.json`, `<model>_<cell_id>.json`, plus the HTTP cache) under
+`data/raw/weather/`. This has not been run yet, because the host is blocked in this
+session (DATA_LOG §6).

@@ -9,7 +9,7 @@ Inputs (read-only, never modified):
 
 Outputs:
   data/interim/stations.csv          one row per ridership station (151), code as 5-char string
-  data/interim/station_order.csv     the 147 benchmark stations in ridership column order
+  data/interim/station_order.csv     the 147 benchmark stations sorted by code
   data/interim/figures/stations_by_trazado.png
   data/interim/reports/01_*.csv      crosstab + match reports
 
@@ -163,7 +163,9 @@ def main():
     for c in ["tipo_esta", "num_vag", "num_acc", "acc_puent", "esta_oper"]:
         st[c] = st[c].astype("Int64")  # integers, nullable for the 4 cable rows
     st[out_cols].to_csv(OUT / "stations.csv", index=False)
-    order = st.loc[st.in_benchmark_147, ["code", "bench_name"]].reset_index(drop=True)
+    # Sorted by code (ascending), the same order as dst_transitnet/data.py. The
+    # parquet's own column order is by code except 07010 Bosa, which is appended last.
+    order = st.loc[st.in_benchmark_147, ["code", "bench_name"]].sort_values("code").reset_index(drop=True)
     order.insert(0, "idx", range(len(order)))
     order.to_csv(OUT / "station_order.csv", index=False)
     print(f"[write] stations.csv ({len(st)} rows), station_order.csv ({len(order)} rows)")

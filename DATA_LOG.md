@@ -14,25 +14,31 @@ from `trondheim-apc-tabular-reproduction`.
 - There is one station order, `data/interim/station_order.csv`, with 147 stations. It is
   used for ridership columns, graph matrix rows and columns, and array station axes.
 - Time is local Bogotá time (UTC−5, no DST), and a timestamp marks the **start** of its
-  interval. See §1b(c) for the evidence behind this.
+  interval. For the ridership data this is **inferred from data** (§1b(c)), not documented
+  by the operator. Weather has its own explicit interval columns (§6).
 - Tables are Parquet, matrices are `.npy`, and small human-readable tables are CSV.
 - Only small files are committed: `stations.csv`, `station_order.csv`, figures, scripts
-  and docs. Everything else under `data/interim/` can be rebuilt and is not committed.
-  The repo `.gitignore` ignores `*.csv`, so the two station CSVs are force-added.
+  and docs. Everything else under `data/interim/` (Parquet, `.npy`, edge-list and report
+  CSVs) and `data/raw/weather/` can be rebuilt and is not committed. The repo `.gitignore`
+  ignores `*.csv`, so the two station CSVs are force-added.
 
 Environment used: Python 3.11.15, pandas 3.0.6, pyarrow 25.0.1, matplotlib 3.11.2,
-openpyxl 3.1.5, holidays 0.105.
+openpyxl 3.1.5, holidays 0.105, requests-cache + retry-requests (for 06).
 
 ## Folder layout
 
 ```
 data/raw/README.md      manifest of raw inputs (referenced in place, nothing moved)
+data/raw/weather/       Open-Meteo responses as downloaded (§6)
 data/interim/           clean base tables
   stations.csv, station_order.csv
-  ridership_15min.parquet            (pending approval of §1b)
-  time_features_15min.parquet        (later)
+  ridership_15min.parquet            §4
+  time_features_15min.parquet        §4 (calendar facts + service flags per timestamp)
   station_time_features_15min.parquet(later)
-  graphs/*.npy                       (later)
+  graphs/adj_*.npy, edges_*.csv      §5
+  station_weather_cell.csv           §6 (pending download)
+  weather_hourly.parquet             §6 (pending download)
+  weather_checks/                    §6 (pending download)
   figures/                           diagnostic figures
   reports/                           audit CSVs written by the scripts (not committed)
 data/processed/track_a_daily/, track_b_15min/   (later, by a builder script)
@@ -46,6 +52,12 @@ scripts/NN_*.py
 | 01 | `scripts/01_build_station_table.py` | `data/interim/stations.csv`, `station_order.csv`, `figures/stations_by_trazado.png`, `reports/01_*.csv` | done 2026-09-25 |
 | 02 | `scripts/02_audit_time_grid.py` | `reports/02_*.csv`, `figures/02_profile_15min.png` (audit only) | done 2026-09-25 |
 | 03 | `scripts/03_audit_edges.py` | `reports/03_edges_with_distance.csv`, `figures/03_edges.png` (audit only) | done 2026-09-25 |
+| 04 | `scripts/04_build_ridership_15min.py` | `ridership_15min.parquet`, `time_features_15min.parquet` | done 2026-09-25 |
+| 05 | `scripts/05_build_graphs.py` | `graphs/adj_benchmark.npy`, `graphs/adj_physical_clean.npy`, `graphs/edges_*.csv`, `graphs/removed_edges_physical_clean.csv` | done 2026-09-25 |
+| 06 | `scripts/06_download_weather.py` | `data/raw/weather/*`, `station_weather_cell.csv`, `weather_hourly.parquet`, `weather_checks/*` | **written, not run: host blocked** (§6) |
+
+The weather script was requested as `03_download_weather.py`. The number 03 was already
+taken by the edge audit, and existing files are not renamed, so it is 06.
 
 Run each one from the repo root: `python scripts/NN_*.py`.
 
@@ -105,9 +117,12 @@ result files `output/day/static/multioutput/dense/*.json` as the reference list 
      esta_oper, match_status, in_benchmark_147`. `bench_name` is the ridership name;
      `current_name` is the GeoJSON `nom_est`, e.g. 02000 "Cabecera Autopista Norte" →
      "Portal Norte – Unicervantes".
-   - `data/interim/station_order.csv` has 147 rows (`idx, code, bench_name`) in **ridership
-     column order**. That order is by code except for `07010` Bosa, which sits at idx 146,
-     after `14005`. DST-TransitNet sorts by code instead.
+   - `data/interim/station_order.csv` has 147 rows (`idx, code, bench_name`) **sorted by code**
+     (changed 2026-09-25, as decided). The first version used the parquet's column order,
+     which is by code except that `07010` Bosa is appended after `14005`.
+     **DST-TransitNet also uses sorted code order:** `dst_transitnet/data.py`
+     `load_station_series` sorts columns by integer code, and `build_adjacency` follows
+     that order. The two orders are identical because every code is 5 digits.
    - `data/interim/figures/stations_by_trazado.png`: 17 `id_trazado` values drawn with
      8 hues × 3 marker shapes, plus the cable stations as open diamonds.
 
@@ -115,7 +130,7 @@ result files `output/day/static/multioutput/dense/*.json` as the reference list 
 
 ---
 
-## 1b. Ridership time-grid audit (`02_audit_time_grid.py`), 2026-09-25, awaiting approval
+## 1b. Ridership time-grid audit (`02_audit_time_grid.py`), 2026-09-25 (decisions in §4)
 
 Input: `data/transmilenio_transactions.parquet`, 186,378 rows, from **2015-08-01 00:00 to
 2021-05-01 23:45** (the file's last timestamp). It has no NaN and no negative values.
@@ -142,8 +157,9 @@ Input: `data/transmilenio_transactions.parquet`, 186,378 rows, from **2015-08-01
   the April-2021 file (30 days), and there is no May file to pair it with. The last real
   interval is **2021-04-30 23:45**, which is also the benchmark's hard cutoff in `data.read_data`
   (`df.index <= '2021-04-30 23:45:00'`).
-- The file's end date stays recorded as 2021-05-01 23:45, as instructed. **Decision needed:**
-  should `ridership_15min.parquet` end at 2021-04-30 23:45?
+- **Decision (2026-09-25):** `ridership_15min.parquet` ends at **2021-04-30 23:45**. The
+  source file ends at 2021-05-01 23:45, but **2021-05-01 is an empty overflow column from the
+  April-2021 raw file** (`…_2021_04 … al 30 Abr 2021 …xlsx`), not a real day of data.
 
 ### (b) Gaps
 - A full 15-min grid over the file's span has 201,696 slots; 184,190 unique timestamps are
@@ -179,10 +195,13 @@ Input: `data/transmilenio_transactions.parquet`, 186,378 rows, from **2015-08-01
   layout. **This is consistent with start-of-interval, but counts alone cannot prove it.**
   An end-of-interval reading would shift everything by 15 min and would not contradict any
   single number. The raw reports carry no timezone; local Bogotá time (UTC−5, no DST) is assumed.
-- **Proposal:** adopt start-of-interval, as the project rules say, and record the caveat.
+- **Decision:** start-of-interval, recorded as **"inferred from data"**. Evidence: (1) the
+  labels run 00:00–23:45 within each date, with no 24:00; (2) the weekday pre-opening trickle
+  falls in the 03:45 label, and the opening ramp starts at 04:00; (3) the AM peak is at the
+  06:30 label. It is not provable from the counts alone.
 - Figure: `figures/02_profile_15min.png`.
 
-**Nothing has been written to `ridership_15min.parquet` yet. This waits for approval of §1b.**
+All proposals in (a)–(c) were approved on 2026-09-25 and applied in §4.
 
 ---
 
@@ -217,6 +236,154 @@ integers, sorted by code.
   02304 Héroes (500 m), plus 03014, 04107 and 07101. That's degree 6, which looks like
   service links rather than physical track adjacency.
 - Figure: `figures/03_edges.png`.
+
+---
+
+## 4. Clean 15-min ridership (`04_build_ridership_15min.py`), 2026-09-25
+
+Decisions applied (approved 2026-09-25):
+1. **Duplicates:** keep the data row and drop the all-zero overflow row. 2,188 rows
+   dropped. The script asserts that every pair is (data, all zero).
+2. **Period:** 2015-08-01 00:00 to **2021-04-30 23:45**. The 86 rows of 2021-05-01 were
+   dropped; they are all zero, which is asserted.
+3. **Grid:** a full 15-min grid of 201,600 slots (2,100 days × 96). **17,496 missing
+   overnight slots were filled with 0.** The script asserts that each one falls in
+   00:00–03:45 and that no row is partially missing. (The audit counted 17,506 over the
+   file's full span; the 10 slots of 2021-05-01 are no longer in range.)
+4. **Total validations preserved:** 3,886,724,821 over the 147 stations, asserted equal
+   before and after. Values are whole numbers, stored as `int32`.
+
+`data/interim/ridership_15min.parquet` has 201,600 rows × (`timestamp` + 147 columns
+named by 5-char code, in `station_order.csv` order). `timestamp` is naive local time and
+marks the start of the interval.
+
+`data/interim/time_features_15min.parquet` has one row per timestamp (201,600 × 15). It
+stores facts and flags only:
+
+| column | meaning |
+|---|---|
+| `timestamp`, `date`, `slot_of_day` (0–95), `hour`, `minute`, `dayofweek` (Mon=0) | calendar |
+| `holiday_name`, `is_holiday` | Colombian public holidays (`holidays` 0.105) |
+| `day_type` | `weekday` / `saturday` / `sunday_holiday` |
+| `system_total` | sum of the 147 stations |
+| `service_band` | `overnight` (23:00–03:45), `edge` (04:xx, 22:xx), `core` (05:00–21:45) |
+| `in_benchmark_hours` | hour ∉ {0,1,2,3,23}, the benchmark's own filter |
+| `is_service_interval` | normal operating interval: always `core`; `edge` only if `system_total > 0` (a zero opening or closing hour means closed by timetable: Sundays, holidays and the 2020 COVID timetable); never `overnight` |
+| `system_suspended` | `core` interval with `system_total == 0` |
+| `filled_zero` | slot absent from the raw data and filled with 0 by this script |
+
+Counts: `core` 142,800, `edge` 16,800, `overnight` 42,000. There are 480 closed edge
+slots. `is_service_interval` = 159,120 and `filled_zero` = 17,496.
+
+**`system_suspended` = 30 slots on 7 dates.** The audit reported 29 because it summed all
+151 stations. On 2020-12-27 at 20:15, the only validation in the whole system was 1 on
+the cable car, which is not among the 147:
+
+| date | slots | from–to |
+|---|---:|---|
+| 2019-11-21 | 3 | 20:45–21:45 |
+| 2019-11-22 | 11 | 19:15–21:45 |
+| 2019-11-23 | 1 | 05:00 |
+| 2019-12-31 | 6 | 20:30–21:45 |
+| 2020-09-21 | 1 | 21:45 |
+| 2020-12-27 | 7 | 20:00–21:45 |
+| 2021-04-28 | 1 | 21:45 |
+
+These are kept as real zeros.
+
+Note: a station-level zero that was missing in the raw reports cannot be told apart from a
+real zero. The benchmark's preprocessing (`transactions_preprocess.ipynb`) applied
+`fillna(0)` before the parquet was written. `filled_zero` therefore marks only whole
+timestamps we added.
+
+---
+
+## 5. Station graphs (`05_build_graphs.py`), 2026-09-25
+
+**Ricaurte check.** The only other Ricaurte code in the ridership data is **`12003` Ricaurte**
+(GeoJSON "Ricaurte - CL 13", TZ009, 404 m from `07111`). The benchmark's station lookup
+`data/clean_stations_database_v2.csv` books **every** access of `(07111) NQS - RICAURTE`
+(9 rows) under `station_name = "(12003) Ricaurte"`. So since the benchmark's preprocessing,
+**12003's series already contains 07111's validations**, and 07111 has no column of its own.
+(One oddity: the Paloquemao row `(01) BATERIA UNO VAGON ORIENTE RICAURTE` is booked under
+07110 Paloquemao.) The better bridge is therefore through 12003, not a direct 07110–07112 edge.
+
+All matrices are 147 × 147 in `station_order.csv` order, symmetric, binary `float32`, with a
+zero diagonal. Add self-loops in the model code if needed.
+
+| version | edges | components | notes |
+|---|---:|---|---|
+| `adj_benchmark.npy` | 155 | **2** (130 + 17) | `Edges.csv` with 2 duplicates removed and 07111's 2 edges dropped. **Equal to DST-TransitNet's `build_adjacency` minus its self-loops (verified).** |
+| `adj_physical_clean.npy` | 155 | **1** (147) | Ricaurte re-attached: `07110–12003` (0.446 km) and `12003–07112` (1.426 km), replacing `07110–07111` and `07111–07112`. El Polo filtered: 2 edges removed. |
+
+El Polo rule. For `04108` (TZ005, at the junction of Calle 80, Autonorte, Suba and NQS),
+keep neighbours on its own `id_trazado`, and for each other `id_trazado` keep only the
+nearest station. The farther ones are reached along their own corridor from the nearest one.
+- Kept: `04107` Escuela Militar (TZ005, 0.851 km), `02304` Héroes (TZ002, 0.500 km),
+  `03014` San Martín (TZ003, 0.761 km), `07101` Castellana (TZ008, 0.606 km).
+- **Removed** `04108–02303` Calle 85 (0.573 km). Reason: TZ002, but Héroes is the nearest
+  TZ002 station, and Héroes–Calle 85 is an existing Autonorte edge.
+- **Removed** `04108–02302` Virrey (0.877 km). Reason: TZ002, and it skips both Héroes and Calle 85.
+
+Files: `graphs/edges_benchmark.csv` and `graphs/edges_physical_clean.csv` (`code_1, code_2,
+distance_km, source`; `source` records re-attached edges), and
+`graphs/removed_edges_physical_clean.csv`. Max edge length is 2.83 km in both
+(Portal Usme–Molinos).
+
+---
+
+## 6. Hourly weather (`06_download_weather.py`): written, NOT yet downloaded
+
+**Status 2026-09-25:** this session's network policy **blocks
+`archive-api.open-meteo.com`** (the proxy answers 403 to CONNECT). No weather data has been
+downloaded, and none of the outputs below exist yet. The script was tested end to end
+(probe → download → process → checks) against a **synthetic** stand-in for the API, which
+returns responses in the same JSON shape. It has not been tested against the real API.
+
+Design:
+- **Source:** Open-Meteo Historical Weather API, `https://archive-api.open-meteo.com/v1/archive`,
+  free, no key. Two models are downloaded separately: `era5` (0.25°) and `era5_land` (0.1°).
+- **Period:** 2015-07-01 to 2021-06-30 local time, with a buffer around the ridership
+  period (2015-08-01 to 2021-04-30).
+- **Hourly variables:** `precipitation, rain, temperature_2m, relative_humidity_2m,
+  cloud_cover, wind_speed_10m`. Units are mm, °C, %, % and km/h. The response's units are
+  asserted for precipitation and temperature.
+- **Request parameters** (all calls): `timezone=America/Bogota` (`utc_offset_seconds = −18000`
+  asserted), `cell_selection=nearest`, `elevation=nan` and `format=json`.
+  With `elevation=nan` there is no lapse-rate downscaling to the station's own height, so
+  the returned elevation is the grid cell's mean height and one cell gives one series.
+- **Grid cells:**
+  1. A 1-day "probe" request per station (50 locations per call) records the cell's
+     lat/lon/elevation for each model.
+  2. The cells are de-duplicated.
+  3. Each unique cell is downloaded **once per model** at its own coordinates. The script
+     asserts that the API returns the same cell.
+  4. `station_weather_cell.csv` covers all 151 stations with coordinates; the counts
+     reported are for the 147.
+- **HTTP:** `requests-cache` (SQLite, no expiry, in `data/raw/weather/http_cache.sqlite`)
+  and `retry-requests` (5 retries, backoff). This is the stack the `openmeteo-requests`
+  client wraps. JSON is used instead of that client's FlatBuffers so the raw responses in
+  `data/raw/weather/` stay exactly as downloaded and readable.
+- **Time convention:** Open-Meteo labels each hour with a time T in local time.
+  - `precipitation` and `rain` are the **sum over the preceding hour**. The value labelled
+    07:00 covers 06:00–07:00, so it gets `interval_start = 06:00` and `interval_end = 07:00`.
+  - Temperature, humidity, cloud cover and wind are **instantaneous at T** (`obs_time = T`).
+  - `weather_hourly.parquet` stores `obs_time`, `interval_start = T − 1h` and
+    `interval_end = T` on every row. Use `interval_*` for precipitation and rain, and
+    `obs_time` for the other variables.
+  - The first row, labelled 2015-07-01 00:00, therefore covers 2015-06-30 23:00–24:00.
+- **Checks** (written to `weather_checks/`):
+  - every expected hour is present for each cell, with null counts per variable;
+  - mean monthly precipitation (the rainy seasons should peak in Apr–May and Oct–Nov);
+  - mean precipitation by hour of `interval_start` (an afternoon peak is expected);
+  - era5 vs era5_land daily precipitation: Pearson and Spearman correlation for the
+    station-weighted area mean, plus the range of per-station correlations.
+- **Expected caveat, to be confirmed on real data:** ERA5-Land has no cloud-cover field, so
+  `cloud_cover` may be null for `era5_land`. The null counts in the gap check will show this.
+
+**To finish:** allow `archive-api.open-meteo.com` in the environment's network settings,
+then run `python scripts/06_download_weather.py`. The cell counts, download date and check
+results will be filled in here.
 
 ---
 
