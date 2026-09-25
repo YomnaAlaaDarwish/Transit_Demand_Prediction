@@ -1,0 +1,148 @@
+idx,code,bench_name
+0,02000,Cabecera Autopista Norte
+1,02001,Centro Comercial Santa Fe
+2,02101,Toberín
+3,02102,Calle 161
+4,02103,Mazurén
+5,02104,Calle 146
+6,02105,Calle 142
+7,02200,Alcalá
+8,02201,Prado
+9,02202,Calle 127
+10,02204,Pepe Sierra
+11,02205,Calle 106
+12,02300,Calle 100
+13,02302,Virrey
+14,02303,Calle 85
+15,02304,Heroes
+16,02502,Terminal
+17,03000,Portal Suba
+18,03001,LA CAMPIÑA
+19,03002,SUBA - TV- 91
+20,03003,21 ANGELES
+21,03004,GRATAMIRA
+22,03005,SUBA - AV. BOYACA
+23,03006,NIZA - CALLE 127
+24,03007,HUMEDAL CORDOBA
+25,03009,Av. Suba- Calle 116
+26,03010,PUENTE LARGO
+27,03011,SUBA - CALLE 100
+28,03012,SUBA - CALLE 95
+29,03013,RIO NEGRO
+30,03014,SAN MARTIN
+31,04000,Cabecera Calle 80
+32,04001,Quirigua
+33,04002,Carrera 90
+34,04003,Avenida Ciudad de Cali
+35,04100,Carrera 77
+36,04101,Minuto de Dios
+37,04102,Avenida Boyaca
+38,04103,Las Ferias
+39,04104,Avenida 68
+40,04105,Carrera 53
+41,04106,Carrera 47
+42,04107,Escuela Militar
+43,04108,El Polo
+44,05000,Portal Américas
+45,05001,Patio Bonito
+46,05002,Tintal
+47,05005,Transversal 86
+48,05100,Banderas P. Central
+49,05101,Mandalay - Cr.73
+50,05102,Av. Américas - Av. Boyacá
+51,05103,Marsella
+52,05105,Pradera
+53,05107,Américas - Cr.53
+54,06000,Portal Eldorado
+55,06001,Modelia
+56,06002,Normandía
+57,06100,Av. Rojas
+58,06101,El Tiempo
+59,06102,Salitre El Greco
+60,06103,CAN
+61,06104,Gobernación
+62,06105,Quinta Paredes
+63,06106,Recinto Ferial
+64,06107,Ciudad Universitaria
+65,06108,Concejo de Bogotá
+66,06109,Centro Memoria
+67,06111,Universidades
+68,07000,Portal Sur
+69,07001,PERDOMO
+70,07002,MADELENA
+71,07003,SEVILLANA
+72,07004,VENECIA
+73,07005,ALQUERIA
+74,07006,General Santander
+75,07007,NQS - Calle 38A Sur
+76,07008,NQS - Calle 30 Sur
+77,07009,SENA
+78,07101,CASTELLANA
+79,07102,NQS - CALLE 75
+80,07103,AV. CHILE
+81,07104,Simon Bolivar
+82,07105,MOVISTAR ARENA
+83,07106,EL CAMPIN
+84,07107,U. NACIONAL
+85,07108,Av. El Dorado
+86,07109,CAD
+87,07110,PALOQUEMAO
+88,07112,COMUNEROS
+89,07113,SANTA ISABEL
+90,07200,Tygua-San José
+91,07201,Guatoque -Veraguas
+92,07503,SAN MATEO
+93,07504,TERREROS
+94,07505,LEON XIII
+95,07506,DESPENSA
+96,08000,Portal Tunal
+97,08001,Parque el Tunal
+98,08002,Biblioteca
+99,09000,Cabecera Usme
+100,09001,Molinos
+101,09002,Consuelo
+102,09003,Socorro
+103,09004,Santa Lucía
+104,09100,Calle 40 Sur
+105,09101,Quiroga
+106,09103,Olaya
+107,09104,Restrepo
+108,09105,Río Fucha
+109,09106,Nariño
+110,09107,Hortúa
+111,09108,Hospital
+112,09109,Tercer Milenio
+113,09110,Avenida Jimenez
+114,09111,Calle 19
+115,09113,Calle 22
+116,09114,Calle 26
+117,09115,Calle 34
+118,09116,Avenida 39
+119,09117,Calle 45
+120,09118,Marly
+121,09119,Calle 57
+122,09120,Calle 63
+123,09121,Las Flores
+124,09122,Calle 72
+125,09123,Calle 76
+126,10000,Portal 20 de Julio
+127,10001,Country Sur
+128,10002,Av. Primero de Mayo
+129,10003,Ciudad Jardín
+130,10004,Policarpa
+131,10005,Bicentenario
+132,10006,San Victorino
+133,10007,Las Nieves
+134,10008,San Diego
+135,10009,Museo Nacional
+136,10010,San Bernardo
+137,12000,Puente Aranda
+138,12001,Carrera 43
+139,12002,CDS - Carrera 32
+140,12003,Ricaurte
+141,12004,Carrera 22
+142,12007,Zona Industrial
+143,14001,La Sabana
+144,14004,Museo del Oro
+145,14005,Las Aguas
+146,07010,Bosa
