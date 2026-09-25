@@ -1,0 +1,7 @@
+# Rebuildable outputs of scripts/NN_*.py -- not committed (see DATA_LOG.md, project rules).
+# Tracked small files (stations.csv, station_order.csv, figures/) are unaffected.
+*.parquet
+*.npy
+graphs/
+reports/
+weather_checks/
