@@ -1,0 +1,3 @@
+# Raw weather downloads (scripts/06_download_weather.py): not committed; sha256 and
+# download date of each file are recorded in data/raw/README.md.
+weather/

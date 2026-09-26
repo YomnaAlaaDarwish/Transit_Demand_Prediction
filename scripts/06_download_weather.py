@@ -44,8 +44,9 @@ Outputs:
 Run from the repo root:  python scripts/06_download_weather.py [--step probe|download|process|checks|all]
 """
 import argparse
+import hashlib
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import matplotlib
@@ -59,6 +60,7 @@ STATIONS = ROOT / "data/interim/stations.csv"
 RAW = ROOT / "data/raw/weather"
 OUT = ROOT / "data/interim"
 CHECKS = OUT / "weather_checks"
+MANIFEST = ROOT / "data/raw/weather_manifest.csv"  # committed; data/raw/weather/ is not
 
 URL = "https://archive-api.open-meteo.com/v1/archive"
 MODELS = ["era5", "era5_land"]
@@ -95,6 +97,17 @@ def haversine_km(la1, lo1, la2, lo2):
     return 2 * 6371.0088 * np.arcsin(np.sqrt(h))
 
 
+def save_raw(path: Path, payload: dict):
+    """Write a raw response and record its sha256 + download time in MANIFEST."""
+    data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    path.write_bytes(data)
+    row = pd.DataFrame([{"file": str(path.relative_to(ROOT)), "bytes": len(data),
+                         "sha256": hashlib.sha256(data).hexdigest(),
+                         "downloaded_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}])
+    old = pd.read_csv(MANIFEST) if MANIFEST.exists() else row.iloc[:0]
+    pd.concat([old[old.file != row.file[0]], row]).to_csv(MANIFEST, index=False)
+
+
 # --------------------------------------------------------------------------- probe
 def probe(sess):
     st = pd.read_csv(STATIONS, dtype={"code": str})
@@ -110,8 +123,7 @@ def probe(sess):
             resp = get(sess, params)
             resp = resp if isinstance(resp, list) else [resp]
             assert len(resp) == len(part), (len(resp), len(part))
-            (RAW / f"probe_{model}_{k // PROBE_CHUNK}.json").write_text(
-                json.dumps({"request": params, "response": resp}, ensure_ascii=False))
+            save_raw(RAW / f"probe_{model}_{k // PROBE_CHUNK}.json", {"request": params, "response": resp})
             for i, ((_, s), r) in enumerate(zip(part.iterrows(), resp)):
                 assert r.get("location_id", i) == i, "multi-location response out of order"
                 assert r["utc_offset_seconds"] == UTC_OFFSET, r["utc_offset_seconds"]
@@ -144,7 +156,7 @@ def download(sess):
         back = cell_id(r["latitude"], r["longitude"])
         if back != c.cell_id:
             raise RuntimeError(f"{c.model}: requesting cell {c.cell_id} returned cell {back}")
-        f.write_text(json.dumps({"request": params, "response": r}, ensure_ascii=False))
+        save_raw(f, {"request": params, "response": r})
         print(f"[download] {c.model} {c.cell_id}: {len(r['hourly']['time'])} hours -> {f.name}")
     print(f"[download] {len(cells)} files ({cells.groupby('model').size().to_dict()})")
 
@@ -168,6 +180,13 @@ def process():
     w.insert(4, "interval_end", w.obs_time)
     w = w.sort_values(["model", "cell_id", "obs_time"]).reset_index(drop=True)
     assert not w.duplicated(["model", "cell_id", "obs_time"]).any()
+    # A variable a model does not provide at all (e.g. cloud_cover in ERA5-Land) is
+    # dropped for that model: its values stay NaN and it is listed in dropped_variables.json.
+    dropped = {m: [v for v in VARIABLES if g[v].isna().all()] for m, g in w.groupby("model")}
+    CHECKS.mkdir(parents=True, exist_ok=True)
+    (CHECKS / "dropped_variables.json").write_text(json.dumps(dropped, indent=2))
+    if any(dropped.values()):
+        print(f"[process] variables entirely null, dropped per model: {dropped}")
     w.to_parquet(OUT / "weather_hourly.parquet", index=False)
     print(f"[process] weather_hourly.parquet: {len(w)} rows, {w.groupby('model').cell_id.nunique().to_dict()} cells")
     return w

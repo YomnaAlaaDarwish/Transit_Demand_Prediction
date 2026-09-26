@@ -29,9 +29,11 @@ Hashes are the first 16 hex characters of SHA-256, computed on 2026-09-25 on bra
 Benchmark result files under `output/day/**` (147 JSON files per model) are used only
 to confirm which stations the benchmark modelled. They are not a data source.
 
-## Pending: `data/raw/weather/`
+## Weather: `data/raw/weather/` (not committed)
 
 `scripts/06_download_weather.py` saves the Open-Meteo responses exactly as downloaded
 (`probe_<model>_<k>.json`, `<model>_<cell_id>.json`, plus the HTTP cache) under
-`data/raw/weather/`. This has not been run yet, because the host is blocked in this
-session (DATA_LOG §6).
+`data/raw/weather/`. That folder is git-ignored (`data/raw/.gitignore`). The script records
+each file's size, sha256 and download time (UTC) in **`data/raw/weather_manifest.csv`**,
+which is committed. Status 2026-09-26: not downloaded yet, because
+`archive-api.open-meteo.com` is still blocked in this session (DATA_LOG §6).

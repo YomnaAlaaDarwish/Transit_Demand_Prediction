@@ -23,7 +23,9 @@ from `trondheim-apc-tabular-reproduction`.
   ignores `*.csv`, so the two station CSVs are force-added.
 
 Environment used: Python 3.11.15, pandas 3.0.6, pyarrow 25.0.1, matplotlib 3.11.2,
-openpyxl 3.1.5, holidays 0.105, requests-cache + retry-requests (for 06).
+openpyxl 3.1.5, holidays 0.105, requests-cache + retry-requests (for 06), pytest 9.1.1.
+`holidays-co` 1.0.0 (the version the benchmark pins in `environment.yml`) was installed
+only to verify it gives the same holiday dates as `holidays` (§7.3).
 
 ## Folder layout
 
@@ -41,7 +43,10 @@ data/interim/           clean base tables
   weather_checks/                    §6 (pending download)
   figures/                           diagnostic figures
   reports/                           audit CSVs written by the scripts (not committed)
-data/processed/track_a_daily/, track_b_15min/   (later, by a builder script)
+data/processed/track_a_daily/, track_b_15min/   §7, by scripts/07 (not committed)
+thesis_pipeline/        library used by scripts 07-08 and the tests (config, periods,
+                        calendar_features, dataset, metrics)
+tests/test_pipeline.py  python -m pytest -q tests/
 scripts/NN_*.py
 ```
 
@@ -54,7 +59,9 @@ scripts/NN_*.py
 | 03 | `scripts/03_audit_edges.py` | `reports/03_edges_with_distance.csv`, `figures/03_edges.png` (audit only) | done 2026-09-25 |
 | 04 | `scripts/04_build_ridership_15min.py` | `ridership_15min.parquet`, `time_features_15min.parquet` | done 2026-09-25 |
 | 05 | `scripts/05_build_graphs.py` | `graphs/adj_benchmark.npy`, `graphs/adj_physical_clean.npy`, `graphs/edges_*.csv`, `graphs/removed_edges_physical_clean.csv` | done 2026-09-25 |
-| 06 | `scripts/06_download_weather.py` | `data/raw/weather/*`, `station_weather_cell.csv`, `weather_hourly.parquet`, `weather_checks/*` | **written, not run: host blocked** (§6) |
+| 06 | `scripts/06_download_weather.py` | `data/raw/weather/*`, `data/raw/weather_manifest.csv`, `station_weather_cell.csv`, `weather_hourly.parquet`, `weather_checks/*` | **written, not run: host still blocked 2026-09-26** (§6) |
+| 07 | `scripts/07_build_dataset.py` | `data/processed/track_a_daily/*`, `data/processed/track_b_15min/*` | done 2026-09-26 (§7) |
+| 08 | `scripts/08_validate_benchmark_metrics.py` | `reports/08_benchmark_metrics.csv`, `reports/08_alignment_scan.csv` | done 2026-09-26 (§7.5) |
 
 The weather script was requested as `03_download_weather.py`. The number 03 was already
 taken by the edge audit, and existing files are not renamed, so it is 06.
@@ -87,9 +94,12 @@ result files `output/day/static/multioutput/dense/*.json` as the reference list 
      Temporal AV. Jiménez - Inter Eléctricas, `09005` Danubio, `05009` Islandia,
      `05010` Los Laureles, `05011` Tibanica - Primavera. The last four are likely
      post-2021 openings or temporary stations. They are **not** in `stations.csv`.
-4. Benchmark check. The original `data.py`/`settings.yaml` contain **no explicit cable
-   filter**. `read_data` keeps every column containing `(`. Its input
-   (`data/clean_transactions.csv`) is not in the repo. Still, all 14 benchmark result
+4. Benchmark check. **Correction (2026-09-26):** `data.py` and `settings.yaml` have no cable
+   filter (`read_data` keeps every column containing `(`), but **`run.py` drops the four
+   cable stations explicitly** (`to_drop_stations`, right after `train_test_data`). The
+   first version of this entry checked only `data.py`/`settings.yaml` and wrongly said
+   the benchmark had no explicit filter. Its input
+   (`data/clean_transactions.csv`) is not in the repo. Also, all 14 benchmark result
    folders under `output/day/` contain exactly 147 station files with no `(400xx)`, and
    their codes **match our 147 exactly**. All 147 names also match after the benchmark's
    own `strip_accents`. So the cable stations were already missing from the CSV the
@@ -308,6 +318,13 @@ timestamps we added.
 (One oddity: the Paloquemao row `(01) BATERIA UNO VAGON ORIENTE RICAURTE` is booked under
 07110 Paloquemao.) The better bridge is therefore through 12003, not a direct 07110–07112 edge.
 
+**12003 represents two physical stations.** Its series sums the Calle 13 side (`12003`,
+GeoJSON 4.61302, −74.09048) and the NQS side (`07111`, GeoJSON 4.61168, −74.09387),
+404 m apart. `stations.csv` gives only the Calle 13 coordinates. **Any later spatial
+feature for 12003 (land-use catchments, POIs, weather cell) must cover both locations**,
+e.g. the union of the two catchments. Approved 2026-09-26, together with the El Polo
+rule and both graph versions below.
+
 All matrices are 147 × 147 in `station_order.csv` order, symmetric, binary `float32`, with a
 zero diagonal. Add self-loops in the model code if needed.
 
@@ -333,6 +350,10 @@ distance_km, source`; `source` records re-attached edges), and
 ---
 
 ## 6. Hourly weather (`06_download_weather.py`): written, NOT yet downloaded
+
+**Status 2026-09-26:** re-tested after the host was allowed in the environment settings:
+**still blocked** (403 to CONNECT at 2026-09-26). A network-policy change may only take
+effect in a new session. Weather was therefore skipped, and Phase 4 uses the weather stub.
 
 **Status 2026-09-25:** this session's network policy **blocks
 `archive-api.open-meteo.com`** (the proxy answers 403 to CONNECT). No weather data has been
@@ -379,11 +400,197 @@ Design:
   - era5 vs era5_land daily precipitation: Pearson and Spearman correlation for the
     station-weighted area mean, plus the range of per-station correlations.
 - **Expected caveat, to be confirmed on real data:** ERA5-Land has no cloud-cover field, so
-  `cloud_cover` may be null for `era5_land`. The null counts in the gap check will show this.
+  `cloud_cover` may be null for `era5_land`. **Rule (approved):** any variable that is
+  entirely null for a model is dropped for that model. Its values stay NaN in
+  `weather_hourly.parquet`, and it is listed in `weather_checks/dropped_variables.json`
+  and in this log.
+- **Raw files:** `data/raw/weather/` is git-ignored (`data/raw/.gitignore`). Each file's
+  sha256, size and download time (UTC) are written by the script to
+  `data/raw/weather_manifest.csv`, which is committed and referenced from `data/raw/README.md`.
 
 **To finish:** allow `archive-api.open-meteo.com` in the environment's network settings,
 then run `python scripts/06_download_weather.py`. The cell counts, download date and check
 results will be filled in here.
+
+---
+
+## 7. Dataset builder and evaluation (Phase 4), 2026-09-26: no model trained
+
+### 7.1 Splits found in the code
+
+| | Track A: benchmark (`settings.yaml`, `run.py`, `data.py`) | Track B: DST-TransitNet reproduction (`dst_transitnet/config.py`, `data.py`) |
+|---|---|---|
+| series | daily sums after dropping hours {0,1,2,3,23}; cable stations dropped in `run.py` | 15-min, hours {0,1,2,3,23} dropped; 147 stations |
+| train | days before `train_date = 2018-08-01` | timestamps before `train_end = 2018-08-01 00:00` |
+| validation | none (early stopping on training loss) | last 10 % of the training timestamps (`val_fraction = 0.1`) |
+| test | 2018-08-01 → 2021-04-30 (`read_data` cutoff) | normal 2018-08-01–2019-01-01, protest 2019-11-21–2019-12-27, covid 2020-03-01–2020-11-05 (our reconstruction, flagged ASSUMPTION there) |
+| lookback | **`steps_back: 14`** | 20 recent steps + 20 steps ending at the target's time one week earlier |
+| horizon | `forecast_window: 7` days | 1 step (15 min); long-term up to 12 steps, iterative |
+
+**Lookback conflict:** the thesis spec asks for a 21-day lookback "as in the benchmark",
+but `settings.yaml` says 14. Neither `run.py` nor the saved outputs record a different
+value, and the number of prediction windows does not depend on the lookback. So the value
+used for the published results cannot be recovered here. `thesis_pipeline/config.py`
+uses 21 as specified and keeps it configurable. **Needs confirmation from the paper.**
+
+**Period labels.** Neither the benchmark code (this repo, plus the upstream
+`jdcaicedo251/transit_demand_prediction` `main` and its branches `Tasnima`, `rnn` and
+`arima_garch`, checked 2026-09-26) nor its notebooks label stable/protest/covid. The
+notebooks only split pre/post COVID at 2020-03-15 (`experiments/result_analysis.ipynb`).
+The paper (Caicedo et al. 2025, *Transport Policy* 171) could not be opened: doi.org,
+sciencedirect and arxiv are blocked here. The labels therefore follow the thesis spec,
+`thesis_pipeline/config.PERIODS`:
+- `protest` = 2019-11-01 ≤ t < 2020-01-01
+- `covid` = t ≥ 2020-03-01
+- `stable` = every other test time, including Jan–Feb 2020.
+
+A window is labelled by its **forecast origin** (first target step). Track B also carries
+`dst_window` (the DST reproduction's windows) so results stay comparable with
+`FINAL_MODEL_COMPARISON.md`. **To match the paper exactly, its period dates are still needed.**
+
+**Our splits** (`make_windows`, all by target time; validation = last 10 % of training
+origins; training origins whose targets reach into validation are purged; test never used
+for tuning):
+
+| | train | val | test |
+|---|---|---|---|
+| Track A origins | 957 (2015-08-22 → last target 2018-04-10) | 106 (2018-04-11 → 2018-07-31) | 998 (2018-08-01 → 2021-04-24, last target 2021-04-30) |
+| Track A test periods | | | stable 517, protest 61, covid 420 |
+| Track B origins | 74,471 (2015-08-08 08:45 → 2018-04-14 06:15) | 8,274 (2018-04-14 06:30 → 2018-07-31 22:45) | 76,304 (2018-08-01 04:00 → 2021-04-30 22:45) |
+| Track B test periods | | | stable 39,292, protest 4,636, covid 32,376; DST windows: normal 11,628, protest 2,736, covid 18,924 |
+
+Track B's first origin is 2015-08-08 08:45, because the one-week history window needs
+7 days + 19 steps of data.
+
+### 7.2 Builder (`thesis_pipeline/dataset.py`, CLI `scripts/07_build_dataset.py`)
+
+`build_dataset(track, fmt, feature_groups, splits=None, origin_stride=1)`
+- `track` `"A"` (daily: lookback 21, horizon 7) or `"B"` (15-min: lookback 20 + weekly
+  history 20, horizon 1).
+- `fmt="tabular"` returns a long table with one row per station × origin × horizon step:
+  `code, origin, h, target_time, y, split, period` [+ `dst_window, is_service_interval`
+  for B], plus the features. Track A has 2,120,769 rows × 46 columns with all groups.
+- `fmt="tensor"` returns `values (T, S, 1)`, `calendar (T, C)`, `static (S, K)` and `windows`.
+  `window_arrays()` cuts `X_lag (N, L, S, 1)`, `X_wk`, `Y (N, H, S)` and `cal_target (N, H, C)`.
+  The station axis is always `station_order.csv`.
+- **Forecast origin** p = the first target step. Ridership inputs are steps < p only.
+  `input_positions()` asserts this on every call.
+- Feature groups:
+  - `lags`: A: `lag_1..lag_21`. B: `lag_1..lag_20` plus `wk_0..wk_19` (wk_j = step p − 532 − j,
+    where 532 = 7 × 76 slots).
+  - `calendar_benchmark`: at the target time.
+  - `calendar_rich`: at the target time.
+  - `station_static`: `id_trazado` (categorical in tabular, one-hot in tensor), `tipo_esta`,
+    `num_vag`, `area_est`, `num_acc`, `acc_puent`.
+  - `weather`: **stub**. It raises `NotImplementedError` until `weather_hourly.parquet`
+    exists, and the error states the rule (only hours with `interval_end` ≤ origin).
+  - Disruption flags are not a feature group yet. When added, they fall under the same
+    "< origin" rule.
+- `scripts/07_build_dataset.py` writes to `data/processed/track_a_daily/` (tabular parquet
+  61 MB, tensor npz, windows, summary) and `track_b_15min/` (tensor npz 38 MB, windows,
+  summary). Track B tabular (about 11 M rows) is written only with `--b-tabular`, in
+  chunks, optionally thinned with `--b-stride`. `data/processed/` is git-ignored.
+
+### 7.3 Calendar features (`thesis_pipeline/calendar_features.py`)
+
+- **`calendar_benchmark`** is a line-by-line port of `data.add_cycles`, `add_holidays` and
+  `temporal_variables`:
+  - sin/cos cycles from `pd.Timestamp.timestamp` of the naive local index;
+  - a year of 365.2524 days (the benchmark's constant);
+  - `day_sin/cos` only below daily aggregation;
+  - `holiday` = Sunday OR public holiday;
+  - `saturday` dummy.
+- **Holidays:** the benchmark uses `holidays_co`, pinned to `holidays-co==1.0.0` in
+  `environment.yml`. Version 1.0.0 and the `holidays` package give the **identical 125
+  dates for 2015–2021**. **`holidays-co` 1.1.3, the unpinned latest, adds 7 non-official
+  July dates** ("Señora del Rosario de Chiquinquirá"). Anyone re-running the benchmark
+  without the pin gets different holiday flags.
+- **`calendar_rich`**, per day:
+  - `is_public_holiday`;
+  - `long_weekend` (the day is in a run of ≥ 3 consecutive days that are Saturday, Sunday
+    or a public holiday);
+  - `day_before_holiday` and `day_after_holiday` (working days only);
+  - `holy_week` (Palm Sunday to Easter Sunday);
+  - `year_end` (20 Dec – 6 Jan). The `year_end` and `holy_week` bounds are this log's definitions.
+
+### 7.4 Metrics (`thesis_pipeline/metrics.py`)
+
+- MAAPE = mean(arctan|(y − ŷ)/y|), as in the benchmark notebooks. Zero targets:
+  - y = 0 and ŷ ≠ 0 gives π/2, as in the benchmark;
+  - 0/0 counts as 0, where the benchmark's `np.mean` would return NaN. These cells are
+    counted in `zero_zero_cells`.
+- **System-wide MAAPE:** mean over stations × horizon steps for each origin, then the mean
+  over the origins of a period. Also reported: MAE, RMSE, and `maape_system_total`, the
+  MAAPE of the station sum, as a diagnostic only.
+- `evaluate_long(df, by=("period",), service_only=False)`. For Track B,
+  `service_only=True` keeps only targets with `is_service_interval` (§4).
+  `evaluate_arrays()` does the same for (N, H, S) arrays.
+
+### 7.5 Benchmark metric reproduction (`scripts/08_validate_benchmark_metrics.py`)
+
+The script reads all 14 saved result folders (`output/day/{online,static}/…`, 147 stations each).
+
+**Alignment.** By the code, `WindowGenerator` puts the first label window so that it ENDS on
+`train_date`. So prediction k targets the days from **2018-07-26 + k** to +6 days, in
+both static mode (1,003 predictions) and online mode (996 predictions). An offset scan
+confirms this: 2018-07-26 minimizes overall MAAPE for all 12 neural models, and
+2018-07-25 for ARIMA/SARIMA, which have 1,004 rows. The benchmark's own analysis
+notebook aligns prediction k with 2018-08-01 + k, which is 6 days off; the errors it
+would report are much higher (`nb_align` rows in `reports/08_benchmark_metrics.csv`).
+
+**Online-mode leakage in the benchmark.** For online origin d, `run.py` refits on
+`df[:d]` and predicts the single test window whose labels are days d−6 … d. So **6 of
+the 7 target days are training labels of that same refit**. Online results are
+therefore optimistic, and not comparable with a leakage-free evaluation such as ours.
+(In static mode only the first 6 test windows overlap the training data.)
+
+**MAAPE by period** (derived alignment, benchmark definition; system-total in brackets):
+
+| model | stable | protest | covid |
+|---|---|---|---|
+| online multi-output LSTM | **0.168** (0.125) | 0.349 (0.271) | 0.304 (0.215) |
+| online multi-output CNN | 0.237 (0.203) | 0.379 (0.297) | 0.422 (0.333) |
+| online multi-output Dense | 0.208 (0.178) | 0.363 (0.288) | 0.441 (0.362) |
+| online single LSTM | 0.152 (0.105) | 0.327 (0.248) | 0.313 (0.210) |
+| static multi-output LSTM | 0.190 (0.150) | 0.372 (0.298) | 0.714 (0.661) |
+| static single ARIMA | 0.358 (0.332) | 0.473 (0.399) | 0.491 (0.405) |
+| static single SARIMA | 0.346 (0.322) | 0.465 (0.393) | 0.501 (0.449) |
+
+(All 14 variants are in `reports/08_benchmark_metrics.csv`.)
+
+**Mismatch with the paper.** The spec quotes "about 0.09 stable" for the online
+multi-output LSTM (Table 8). We get 0.168 with the benchmark definition. Other variants:
+- 0.125 on the system total;
+- 0.099 as the median over stable origins of the system-total MAAPE;
+- in holiday-free months (Sep 2018, Feb/Jul/Sep 2019), 0.069–0.088 on the system total,
+  but still 0.115–0.133 with the benchmark definition.
+
+**Not reproduced.** Likely causes, in order:
+1. The paper's "stable" window is probably narrower than "all test days except Nov–Dec 2019
+   and from Mar 2020". Holiday months (Aug, Dec, Holy Week) roughly double the error.
+2. The paper's MAAPE may be computed on the system total, or aggregated differently
+   (e.g. a median).
+3. The paper's target series is `clean_transactions.csv`, which is not in the repo; ours is
+   rebuilt from the parquet.
+4. The lookback (14 vs 21) only affects re-runs, not these saved predictions.
+
+**Needed to close this:** Table 8's exact values, the period dates, and the MAAPE
+aggregation from the paper.
+
+### 7.6 Tests (`tests/test_pipeline.py`, `python -m pytest -q tests/`): 13 passed
+
+- **Leakage** (A and B, tabular and tensor). A synthetic series with Y[t, s] = t traces
+  every feature back to its time step. All lag and weekly values are < origin, `lag_1` =
+  origin − 1, and y = the value at `target_time`. Mutation check: shifting lags by one
+  step makes all 4 leakage tests fail.
+- **Weather** stays a stub while there is no data.
+- **Splits** are chronological and disjoint: train < val < train_end ≤ test ≤ test_end.
+- **Station axes:** tensor and tabular follow `station_order.csv`. The real ridership
+  columns, `adj_*.npy` and the edge lists agree with it.
+- **Track A sums:** daily values equal the 15-min sums over 04:00–22:45 exactly. They also
+  equal an independent rebuild from the untouched `transmilenio_transactions.parquet`
+  (benchmark `read_data` logic: sum duplicates, cut at 2021-04-30 23:45, drop hours).
+- **Metrics:** the MAAPE zero rules, and averaging per origin first; the service-only filter.
 
 ---
 
